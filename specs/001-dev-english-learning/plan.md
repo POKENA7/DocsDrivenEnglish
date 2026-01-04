@@ -54,6 +54,7 @@ specs/001-dev-english-learning/
 
 関連ドキュメント:
 - シーケンス図: [sequence.md](sequence.md)
+- 画面構成/画面遷移: [ui.md](ui.md)
 
 ### Source Code (repository root)
 
@@ -65,16 +66,6 @@ frontend/                          # Next.js app（create-next-app で生成）
 │   │   │   └── page.tsx
 │   │   ├── (features)/
 │   │   │   ├── layout.tsx
-│   │   │   ├── mode/
-│   │   │   │   ├── page.tsx               # routing only → _components/ModePage.tsx
-│   │   │   │   ├── _api/
-│   │   │   │   │   ├── actions.ts         # Server Actions
-│   │   │   │   │   └── query.ts           # client fetch が必要な場合のみ
-│   │   │   │   ├── _components/
-│   │   │   │   │   ├── ModePage.tsx       # Container（Server Components: data fetch のみ）
-│   │   │   │   │   └── ...                # Presentational / Client Components
-│   │   │   │   ├── _hooks/
-│   │   │   │   └── _utils/
 │   │   │   ├── session/
 │   │   │   │   ├── page.tsx               # routing only（必要なら redirect 等）
 │   │   │   │   ├── [sessionId]/
@@ -101,7 +92,7 @@ frontend/                          # Next.js app（create-next-app で生成）
 │   │   │   │   ├── _hooks/
 │   │   │   │   └── _utils/
 │   │   │   └── document/
-│   │   │       ├── page.tsx               # routing only → _components/DocumentPage.tsx
+│   │   │       ├── page.tsx               # routing only → _components/DocumentPage.tsx（URL入力 + mode選択 + 学習開始）
 │   │   │       ├── _api/
 │   │   │       │   ├── actions.ts
 │   │   │       │   └── query.ts
@@ -125,6 +116,9 @@ frontend/                          # Next.js app（create-next-app で生成）
 ```
 
 **Structure Decision**: feature ごとの実装は `frontend/src/app/(features)/<feature>` にコロケーションし、`page.tsx` は routing の責務のみを担う。実 UI は `_components` 配下へ集約し、RSC-first を前提に Client Boundary を最小化する。
+
+Notes:
+- 学習開始フローは `/document` で URL入力 + mode選択 + `POST /api/quiz/session` まで完結する（`/mode` は作らない）。
 
 ### UI Folder Rules（Colocation + Container/Presentational）
 

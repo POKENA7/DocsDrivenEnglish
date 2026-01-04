@@ -3,10 +3,13 @@
 **Created**: 2026-01-04  
 **Spec**: [spec.md](spec.md)  
 **Contracts**: [contracts/openapi.yaml](contracts/openapi.yaml)
+**UI**: [ui.md](ui.md)
 
 ## 目的
 
 `/api/quiz/session` に URL入力〜教材抽出〜出題開始を一本化した構成において、ユーザーがクイズ学習する一連のフロー（URL入力→出題→回答→解説）をシーケンス図で示す。
+
+補足: 画面構成（各ページで何を表示するか）と画面遷移は [ui.md](ui.md) にまとめる。
 
 ## APIの役割（要約）
 
@@ -31,9 +34,7 @@ sequenceDiagram
   participant HistAPI as API /api/history/summary
   participant OpenAI as OpenAI API
 
-  User->>Web: TopでURL入力して学習開始
-  Web-->>User: Mode選択画面を表示（word/reading）
-  User->>Web: Modeを選択
+  User->>Web: /document でURL入力 + mode選択して学習開始
   Web->>QuizAPI: POST /api/quiz/session { url, mode }
   Note right of QuizAPI: URL検証→HTML fetch→本文抽出→
   Note right of QuizAPI: （最大）10問+解説を生成→セッション開始
