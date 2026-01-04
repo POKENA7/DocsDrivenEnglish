@@ -26,12 +26,14 @@ export async function createOpenAIResponse(input: string, model: string) {
   const timeoutId = setTimeout(() => controller.abort(), OPENAI_TIMEOUT_MS);
 
   try {
-    return await getOpenAIClient().responses.create({
-      model,
-      input,
-      max_output_tokens: OPENAI_MAX_OUTPUT_TOKENS,
-      signal: controller.signal,
-    });
+    return await getOpenAIClient().responses.create(
+      {
+        model,
+        input,
+        max_output_tokens: OPENAI_MAX_OUTPUT_TOKENS,
+      },
+      { signal: controller.signal },
+    );
   } finally {
     clearTimeout(timeoutId);
   }

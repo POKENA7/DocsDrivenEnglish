@@ -1,6 +1,7 @@
 import "server-only";
 
 import type { Context } from "hono";
+import type { ContentfulStatusCode } from "hono/utils/http-status";
 
 export type ApiErrorCode =
   | "BAD_REQUEST"
@@ -11,9 +12,9 @@ export type ApiErrorCode =
 
 export class ApiError extends Error {
   readonly code: ApiErrorCode;
-  readonly status: number;
+  readonly status: ContentfulStatusCode;
 
-  constructor(code: ApiErrorCode, status: number, message: string) {
+  constructor(code: ApiErrorCode, status: ContentfulStatusCode, message: string) {
     super(message);
     this.code = code;
     this.status = status;

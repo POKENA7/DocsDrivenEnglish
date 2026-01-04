@@ -61,7 +61,7 @@ function getOptionalDbFromBindings(bindings: unknown) {
 }
 
 export async function recordAttemptIfLoggedIn(attempt: PersistedAttemptInput, bindings?: unknown) {
-  const userId = getOptionalUserId();
+  const userId = await getOptionalUserId();
   if (!userId) return;
 
   recordAttemptForUser(userId, { answeredAt: attempt.answeredAt, isCorrect: attempt.isCorrect });
@@ -82,7 +82,7 @@ export async function recordAttemptIfLoggedIn(attempt: PersistedAttemptInput, bi
 }
 
 historyApp.get("/summary", async (c) => {
-  const userId = requireUserId();
+  const userId = await requireUserId();
 
   const db = getOptionalDbFromBindings(c.env);
   if (!db) {

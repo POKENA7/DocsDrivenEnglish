@@ -4,13 +4,13 @@ import { auth } from "@clerk/nextjs/server";
 
 import { ApiError } from "@/app/api/[[...route]]/errors";
 
-export function getOptionalUserId(): string | null {
-  const { userId } = auth();
+export async function getOptionalUserId(): Promise<string | null> {
+  const { userId } = await auth();
   return userId ?? null;
 }
 
-export function requireUserId(): string {
-  const { userId } = auth();
+export async function requireUserId(): Promise<string> {
+  const { userId } = await auth();
   if (!userId) {
     throw new ApiError("UNAUTHORIZED", 401, "Unauthorized");
   }
