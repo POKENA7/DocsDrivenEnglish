@@ -53,9 +53,9 @@ export default function SessionPage({ session }: { session: SessionSnapshot }) {
                 result !== null && selectedIndex === i && i !== current.correctIndex;
 
               const extra = showCorrect
-                ? "border-primary"
+                ? "border-primary bg-primary/10 ring-2 ring-primary/20"
                 : showIncorrect
-                  ? "border-destructive bg-destructive/10"
+                  ? "border-destructive bg-destructive/10 ring-2 ring-destructive/15"
                   : "";
 
               return (
@@ -96,8 +96,14 @@ export default function SessionPage({ session }: { session: SessionSnapshot }) {
             )}
 
             {result ? (
-              <p className={`text-sm ${result.isCorrect ? "text-foreground" : "text-destructive"}`}>
-                {result.isCorrect ? "Correct" : "Incorrect"}
+              <p
+                role="status"
+                aria-live="polite"
+                className={`result-badge ${
+                  result.isCorrect ? "result-badge--correct" : "result-badge--incorrect"
+                }`}
+              >
+                {result.isCorrect ? "Correct!" : "Incorrect"}
               </p>
             ) : (
               <p className="text-xs text-muted-foreground">選択してから確定してください</p>
