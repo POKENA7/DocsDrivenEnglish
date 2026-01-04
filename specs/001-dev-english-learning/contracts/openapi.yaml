@@ -147,7 +147,7 @@ paths:
   /api/quiz/session:
     post:
       tags: [quiz]
-      summary: セッション開始（入力URLを教材として最大10問）
+      summary: セッション開始（入力URLを教材として最大5問）
       requestBody:
         required: true
         content:

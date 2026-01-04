@@ -54,7 +54,7 @@ export default function SessionCompletePage(props: {
 
             <div className="flex flex-wrap items-center gap-3">
               <button type="submit" disabled={mutation.isMutating} className="btn btn-primary">
-                {mutation.isMutating ? "開始中..." : "続行（次の10問）"}
+                {mutation.isMutating ? "開始中..." : "続行（次の5問）"}
               </button>
               <Link href="/learn" className="btn btn-ghost">
                 別のURLで学習

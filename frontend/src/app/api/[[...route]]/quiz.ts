@@ -66,6 +66,8 @@ type SessionRecord = {
 
 const STRUCTURED_OUTPUTS_MODEL = "gpt-5-mini";
 
+const PLANNED_QUESTION_COUNT = 5;
+
 const inMemorySessions = new Map<string, SessionRecord>();
 const inMemoryQuestions = new Map<string, QuestionRecord>();
 
@@ -200,34 +202,40 @@ async function generateQuizItemsFromText(
         }),
       )
       .min(1)
-      .max(10),
+      .max(PLANNED_QUESTION_COUNT),
   });
 
-  const prompt =
+  const base =
     "あなたは『英語と技術の両方を学べるプログラマー向け英語学習サイト』のクイズ作成者です。\n" +
     "英語学習サイトであるため、出題内容は技術知識を前提とせず、英文を読むことで解ける内容にしてください。\n" +
     "扱う文章は技術ドキュメント（APIドキュメント/仕様/README/設計書など）です。\n" +
-    `Mode: ${mode}\n` +
     `Source: ${sourceUrl}\n` +
     `Title: ${sourceTitle ?? ""}\n` +
-    "要件（厳守）:\n" +
-    "- 基本は10問作る。ただし入力テキストが短く、10問を自然に作ることが難しい場合は 1〜9問でもよい。\n" +
-    "- word: 入力された英文内の重要な英単語/英語フレーズを1つ選び、『日本語の意味』を4択で問う。\n" +
-    "- reading: 入力された英文の『日本語としての意味/訳』を4択で問う。\n" +
+    "共通要件（厳守）:\n" +
+    "- 基本は5問作る。ただし入力テキストが短く、5問を自然に作ることが難しい場合は 1〜4問でもよい。\n" +
     "- prompt(問題文), choices(選択肢), explanation(解説)はすべて日本語。\n" +
     "- choices は必ず4つ。正解は correctIndex(0-3) で示す。\n" +
     "- 選択肢は『よくある誤読/別の語義/似た概念』など、学習価値がある紛らわしさにする（ただし重複や同義反復は避ける）。\n" +
-    "- 解説は1文で簡潔に。\n" +
-    "\n" +
-    "入力テキスト:\n" +
-    trimmed;
+    "- 解説は1文で簡潔に。\n";
+
+  const modeSpecific =
+    mode === "word"
+      ? "word モード要件（厳守）:\n" +
+        "- 入力された英文内の重要な英単語/英語フレーズを1つ選び、『日本語の意味』を4択で問う。\n" +
+        "- prompt には対象の英単語/英語フレーズと、短い英文の例（前後の文脈が分かる程度）を含める。\n"
+      : "reading モード要件（厳守）:\n" +
+        "- 各問題は、入力テキストから連続した『英文3〜5文程度』を抜粋し、その内容を理解しているかを4択で問う。\n" +
+        "- prompt には抜粋した英文（3〜5文）を必ず含め、その後に日本語で1つ質問を書く（例: 『本文の内容として正しいものはどれ？』）。\n" +
+        "- choices は本文の内容理解を問う日本語の選択肢にする（単なる逐語訳の4択にはしない）。\n";
+
+  const prompt = base + modeSpecific + "\n" + "入力テキスト:\n" + trimmed;
 
   const parsed = await createOpenAIParsedText(
     prompt,
     STRUCTURED_OUTPUTS_MODEL,
     QuizItemsSchema,
     "quiz_items_ja",
-    { maxOutputTokens: 4096 },
+    { maxOutputTokens: 8000 },
   );
 
   return parsed.items.map((item) => ({
@@ -243,7 +251,7 @@ export async function startQuizSession(
   bindings?: unknown,
 ): Promise<StartSessionResponse> {
   const extracted = await fetchAndExtractDocument(input.url);
-  const plannedCount = 10;
+  const plannedCount = PLANNED_QUESTION_COUNT;
   const text = getSentencesFromMarkdown(extracted.markdown).join("\n");
   if (!text.trim()) {
     throw new ApiError(

@@ -13,7 +13,7 @@
 
 ## Project Overview
 
-DocsDrivenEnglish は、公開ドキュメントURLから教材を生成し、最大10問単位のクイズで学習する「プログラマー向け英語学習サイト（MVP）」です。
+DocsDrivenEnglish は、公開ドキュメントURLから教材を生成し、最大5問単位のクイズで学習する「プログラマー向け英語学習サイト（MVP）」です。
 
 - Frontend/Server: Next.js (App Router)
 - API: Next.js route 上で Hono を利用

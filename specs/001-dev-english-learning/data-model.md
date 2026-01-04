@@ -58,7 +58,7 @@ Notes:
 
 ### StudySession
 
-- Purpose: 10問単位の学習セッション（FR-018/FR-019）
+- Purpose: 5問単位の学習セッション（FR-018/FR-019）
 
 Fields:
 - `sessionId` (string, required, unique)
@@ -69,8 +69,8 @@ Fields:
 - `title` (string, optional)
 - `fetchedAt` (datetime, required)
 - `mode` (enum, required)
-- `plannedCount` (number, required) — 原則10
-- `actualCount` (number, required) — 10未満の場合はX
+- `plannedCount` (number, required) — 原則5
+- `actualCount` (number, required) — 5未満の場合はX
 - `createdAt` (datetime, required)
 - `completedAt` (datetime, optional)
 

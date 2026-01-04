@@ -14,7 +14,7 @@ export default function MarketingHomePage() {
 
         <p className="mt-4 max-w-prose text-sm leading-relaxed text-muted-foreground">
           URL
-          を貼るだけで、1ページ分の公開ドキュメントから問題を生成し、最大10問のクイズで学習します。
+          を貼るだけで、1ページ分の公開ドキュメントから問題を生成し、最大5問のクイズで学習します。
         </p>
 
         <div className="mt-8 flex flex-wrap items-center gap-3">

@@ -79,12 +79,12 @@ description: "Task list for feature implementation"
 - [X] T025 [US1] 解説生成（英語の意味 + 技術背景 + 使用シーン）を session start 時に各Questionにつき1つ生成する（同一ファイル内の関数として）実装（`frontend/src/app/api/[[...route]]/quiz.ts`）
 - [X] T026 [US1] Session/Question の永続化（作成/取得）を repository 相当として（同一ファイル内の関数として）実装（`frontend/src/app/api/[[...route]]/quiz.ts`）
 - [X] T027 [US1] `POST /api/quiz/session` の入力（url+mode）validation と error mapping を実装（`frontend/src/app/api/[[...route]]/quiz.ts`, `frontend/src/app/api/[[...route]]/errors.ts`）
-- [X] T028 [US1] `POST /api/quiz/session`（URL→fetch→extract→最大10問+解説生成→session開始）を実装（`frontend/src/app/api/[[...route]]/quiz.ts`）
+- [X] T028 [US1] `POST /api/quiz/session`（URL→fetch→extract→最大5問+解説生成→session開始）を実装（`frontend/src/app/api/[[...route]]/quiz.ts`）
 - [X] T029 [US1] `POST /api/quiz/answer`（採点 + 解説 + 出典）を実装（`frontend/src/app/api/[[...route]]/quiz.ts`）
 - [X] T030 [US1] Landing（Top）画面を実装（学習開始は `/learn` へ誘導） （`frontend/src/app/(marketing)/page.tsx`）
 - [X] T031 [US1] `/learn` で URL入力 + mode選択 + 学習開始（`POST /api/quiz/session`）まで完結する画面を実装（`frontend/src/app/(features)/learn/page.tsx`, `frontend/src/app/(features)/learn/_components/LearnPage.tsx`, `frontend/src/app/(features)/learn/_api/actions.ts`）
 - [X] T032 [US1] Quiz 画面（問題表示/選択/確定→結果表示→次へ）を実装（`frontend/src/app/(features)/session/[sessionId]/page.tsx`, `frontend/src/app/(features)/session/_components/SessionPage.tsx`）
-- [X] T033 [US1] セッション完了（10問 or 全X問）UI と「続行（次の10問）」導線を実装（`frontend/src/app/(features)/session/[sessionId]/complete/page.tsx`, `frontend/src/app/(features)/session/_components/SessionCompletePage.tsx`）
+- [X] T033 [US1] セッション完了（5問 or 全X問）UI と「続行（次の5問）」導線を実装（`frontend/src/app/(features)/session/[sessionId]/complete/page.tsx`, `frontend/src/app/(features)/session/_components/SessionCompletePage.tsx`）
 - [X] T034 [US1] 出典表示（引用テキスト + 元URL）を UI に組み込む（`frontend/src/app/(features)/session/_components/SourceAttribution.tsx`）
 
 Note（RSC）:

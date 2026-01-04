@@ -71,7 +71,7 @@ describe("POST /api/quiz/session", () => {
 
     const json = await res.json();
     expect(json.sessionId).toBeTruthy();
-    expect(json.plannedCount).toBe(10);
+    expect(json.plannedCount).toBe(5);
     expect(Array.isArray(json.questions)).toBe(true);
   });
 });

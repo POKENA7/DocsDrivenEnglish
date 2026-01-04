@@ -37,10 +37,10 @@ sequenceDiagram
   User->>Web: /learn でURL入力 + mode選択して学習開始
   Web->>QuizAPI: POST /api/quiz/session { url, mode }
   Note right of QuizAPI: URL検証→HTML fetch→本文抽出→
-  Note right of QuizAPI: （最大）10問+解説を生成→セッション開始
+  Note right of QuizAPI: （最大）5問+解説を生成→セッション開始
   QuizAPI->>OpenAI: Generate questions + explanations (server-side)
   Note right of OpenAI: timeout / max output を固定
-  QuizAPI-->>Web: 200 { sessionId, plannedCount:10, actualCount, sourceUrl, sourceQuoteText, title?, questions[] }
+  QuizAPI-->>Web: 200 { sessionId, plannedCount:5, actualCount, sourceUrl, sourceQuoteText, title?, questions[] }
 
   loop 各Question（最大actualCount回）
     Web-->>User: 問題+choices(4)を表示
@@ -52,8 +52,8 @@ sequenceDiagram
     User->>Web: 次へ
   end
 
-  Web-->>User: セッション完了（10問 or 全X問）
-  opt 続行して次の10問
+  Web-->>User: セッション完了（5問 or 全X問）
+  opt 続行して次の5問
     User->>Web: 続行
     Web->>QuizAPI: POST /api/quiz/session { url, mode }
     QuizAPI-->>Web: 200 { sessionId, plannedCount, actualCount, sourceUrl, sourceQuoteText, title?, questions[] }
@@ -81,7 +81,7 @@ sequenceDiagram
 - Input:
   - extracted text（本文抽出結果）
   - mode（word/reading）
-  - 制約（4 choices、function words exclude、最大10問、各Questionにつき解説は1つ）
+  - 制約（4 choices、function words exclude、最大5問、各Questionにつき解説は1つ）
 
 例:
 
@@ -98,7 +98,7 @@ sequenceDiagram
       "role": "user",
       "content": {
         "mode": "word",
-        "maxQuestions": 10,
+        "maxQuestions": 5,
         "rules": ["4 choices", "exclude function words"],
         "documentText": "<extractedText>"
       }

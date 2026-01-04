@@ -5,7 +5,7 @@
 
 ## Summary
 
-- ユーザーが入力した公開ドキュメントURL（1ページのみ）を本文抽出し、単語モード/読解モードの4択クイズを（最大）10問単位で出題する。
+- ユーザーが入力した公開ドキュメントURL（1ページのみ）を本文抽出し、単語モード/読解モードの4択クイズを（最大）5問単位で出題する。
 - 回答確定後に「正誤 + 解説（英語の意味/技術背景/使用シーン）+ 出典（引用テキスト + 元URL）」を表示する。
 - 未ログインでも学習は可能。ログイン時（Clerk）は Attempt を Cloudflare D1 に永続化し、履歴集計（問題数/正答率/学習日数）を表示する。
 
@@ -23,7 +23,7 @@
 - server-only なモジュール（DB/secret/fetch layer）は `server-only` で保護する
 - lint/format は ESLint + Prettier（Biome は使わない）
 - OpenAI API は server side のみで呼び出し、timeout/出力上限を固定する
-**Scale/Scope**: MVP（URL 1ページのみ、10問単位、未ログイン可/ログインで永続化）
+**Scale/Scope**: MVP（URL 1ページのみ、5問単位、未ログイン可/ログインで永続化）
 
 ## Constitution Check
 

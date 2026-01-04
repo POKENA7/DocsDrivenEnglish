@@ -59,7 +59,7 @@ export default function LearnPage() {
             <button type="submit" disabled={pending} className="btn btn-primary">
               {pending ? "開始中..." : "学習開始"}
             </button>
-            <p className="text-xs text-muted-foreground">最大10問のクイズが始まります</p>
+            <p className="text-xs text-muted-foreground">最大5問のクイズが始まります</p>
           </div>
         </section>
       </form>
