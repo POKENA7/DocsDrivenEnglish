@@ -4,7 +4,9 @@ import type { D1Database } from "@cloudflare/workers-types";
 
 import { Hono } from "hono";
 
-import { createOpenAIResponse } from "@/lib/openaiClient";
+import { z } from "zod";
+
+import { createOpenAIParsedText } from "@/lib/openaiClient";
 
 import { createDb } from "@/db/client";
 import { questions as questionsTable, studySessions } from "@/db/schema";
@@ -61,6 +63,8 @@ type SessionRecord = {
   title: string | null;
   questions: QuestionRecord[];
 };
+
+const STRUCTURED_OUTPUTS_MODEL = "gpt-5-mini";
 
 const inMemorySessions = new Map<string, SessionRecord>();
 const inMemoryQuestions = new Map<string, QuestionRecord>();
@@ -249,32 +253,29 @@ function pickChoices(
 }
 
 async function generateExplanation(word: string, mode: Mode, sourceUrl: string): Promise<string> {
+  const ExplanationSchema = z.object({ explanation: z.string() });
+
   const prompt =
     `Explain the English term or phrase: ${word}\n` +
     `Mode: ${mode}\n` +
     `Include: meaning, technical background, and typical usage scenario.\n` +
+    `Keep it concise (2-4 sentences).\n` +
     `Source: ${sourceUrl}`;
 
-  const res = (await createOpenAIResponse(prompt, "gpt-4.1-mini")) as unknown;
-  if (!res || typeof res !== "object") return "";
-
-  const record = res as Record<string, unknown>;
-  const outputText = record.output_text;
-  if (typeof outputText !== "string") return "";
-
-  return outputText.trim();
-}
-
-function extractJsonFromText(text: string): unknown {
-  const start = text.indexOf("{");
-  const end = text.lastIndexOf("}");
-  if (start < 0 || end < 0 || end <= start) return null;
-
-  const slice = text.slice(start, end + 1);
   try {
-    return JSON.parse(slice) as unknown;
+    const parsed = await createOpenAIParsedText(
+      prompt,
+      STRUCTURED_OUTPUTS_MODEL,
+      ExplanationSchema,
+      "term_explanation",
+    );
+    return parsed.explanation.trim();
   } catch {
-    return null;
+    throw new ApiError(
+      "INTERNAL",
+      500,
+      "問題の生成に失敗しました。しばらくしてから再試行してください。",
+    );
   }
 }
 
@@ -285,9 +286,16 @@ async function generateExplanationsBatch(
 ): Promise<Map<string, string>> {
   if (words.length === 0) return new Map();
 
+  const ExplanationsBatchSchema = z.object({
+    items: z.array(
+      z.object({
+        term: z.string(),
+        explanation: z.string(),
+      }),
+    ),
+  });
+
   const prompt =
-    "Return ONLY valid JSON (no markdown, no code fences).\n" +
-    'Schema: {"items":[{"term":string,"explanation":string}]}\n' +
     `Mode: ${mode}\n` +
     `Source: ${sourceUrl}\n` +
     "For each term, write a concise explanation including: meaning, technical background, and a typical usage scenario.\n" +
@@ -295,32 +303,27 @@ async function generateExplanationsBatch(
     "Terms:\n" +
     words.map((w) => `- ${w}`).join("\n");
 
-  const res = (await createOpenAIResponse(prompt, "gpt-4.1-mini")) as unknown;
+  try {
+    const parsed = await createOpenAIParsedText(
+      prompt,
+      STRUCTURED_OUTPUTS_MODEL,
+      ExplanationsBatchSchema,
+      "term_explanations",
+    );
 
-  if (!res || typeof res !== "object") return new Map();
-  const record = res as Record<string, unknown>;
-  const outputText = record.output_text;
-  if (typeof outputText !== "string") return new Map();
-
-  const parsed = extractJsonFromText(outputText);
-  if (!parsed || typeof parsed !== "object") return new Map();
-
-  const obj = parsed as Record<string, unknown>;
-  const items = obj.items;
-  if (!Array.isArray(items)) return new Map();
-
-  const map = new Map<string, string>();
-  for (const item of items) {
-    if (!item || typeof item !== "object") continue;
-    const r = item as Record<string, unknown>;
-    const term = r.term;
-    const explanation = r.explanation;
-    if (typeof term !== "string" || typeof explanation !== "string") continue;
-    if (!term.trim()) continue;
-    map.set(term, explanation.trim());
+    const map = new Map<string, string>();
+    for (const item of parsed.items) {
+      if (!item.term.trim()) continue;
+      map.set(item.term, item.explanation.trim());
+    }
+    return map;
+  } catch {
+    throw new ApiError(
+      "INTERNAL",
+      500,
+      "問題の生成に失敗しました。しばらくしてから再試行してください。",
+    );
   }
-
-  return map;
 }
 
 export async function startQuizSession(

@@ -6,6 +6,9 @@ vi.mock("@/lib/openaiClient", () => {
   return {
     OPENAI_MAX_OUTPUT_TOKENS: 10,
     OPENAI_TIMEOUT_MS: 1000,
+    createOpenAIParsedText: vi.fn(async () => {
+      return { explanation: "dummy" };
+    }),
     createOpenAIResponse: vi.fn(async () => {
       return {
         output_text: "dummy",

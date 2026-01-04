@@ -6,6 +6,18 @@ vi.mock("@/lib/openaiClient", () => {
   return {
     OPENAI_MAX_OUTPUT_TOKENS: 10,
     OPENAI_TIMEOUT_MS: 1000,
+    createOpenAIParsedText: vi.fn(
+      async (_input: string, _model: string, _schema: unknown, schemaName: string) => {
+        if (schemaName === "term_explanations") {
+          const terms = Array.from(_input.matchAll(/^-\s+([a-z0-9-]+)\s*$/gim)).map((m) => m[1]);
+          return {
+            items: terms.map((term) => ({ term, explanation: "dummy" })),
+          };
+        }
+
+        return { explanation: "dummy" };
+      },
+    ),
     createOpenAIResponse: vi.fn(async () => {
       return {
         output_text: "dummy",

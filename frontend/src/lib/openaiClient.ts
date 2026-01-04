@@ -1,6 +1,8 @@
 import "server-only";
 
 import OpenAI from "openai";
+import { zodTextFormat } from "openai/helpers/zod";
+import { z } from "zod";
 
 import { getEnv } from "@/app/env/env";
 
@@ -23,6 +25,41 @@ export function getOpenAIClient(): OpenAI {
 
 export async function createOpenAIResponse(input: string, model: string) {
   return createOpenAIResponseWithOptions(input, model);
+}
+
+export async function createOpenAIParsedText<TSchema extends z.ZodTypeAny>(
+  input: string,
+  model: string,
+  schema: TSchema,
+  schemaName: string,
+  options?: {
+    timeoutMs?: number;
+    maxOutputTokens?: number;
+  },
+): Promise<z.infer<TSchema>> {
+  const timeoutMs = options?.timeoutMs ?? OPENAI_TIMEOUT_MS;
+  const maxOutputTokens = options?.maxOutputTokens ?? OPENAI_MAX_OUTPUT_TOKENS;
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const response = await getOpenAIClient().responses.parse(
+      {
+        model,
+        input: [{ role: "user", content: input }],
+        max_output_tokens: maxOutputTokens,
+        text: {
+          format: zodTextFormat(schema, schemaName),
+        },
+      },
+      { signal: controller.signal },
+    );
+
+    return response.output_parsed;
+  } finally {
+    clearTimeout(timeoutId);
+  }
 }
 
 export async function createOpenAIResponseWithOptions(
