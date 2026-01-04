@@ -146,49 +146,6 @@ async function getQuestionIfPossible(
   };
 }
 
-const STOPWORDS = new Set([
-  "a",
-  "an",
-  "the",
-  "and",
-  "or",
-  "but",
-  "if",
-  "then",
-  "else",
-  "for",
-  "to",
-  "of",
-  "in",
-  "on",
-  "at",
-  "by",
-  "with",
-  "as",
-  "is",
-  "are",
-  "was",
-  "were",
-  "be",
-  "been",
-  "being",
-  "this",
-  "that",
-  "these",
-  "those",
-  "it",
-  "its",
-  "you",
-  "your",
-  "we",
-  "our",
-  "they",
-  "their",
-  "i",
-  "me",
-  "my",
-]);
-
 function assertMode(mode: unknown): Mode {
   if (mode === "word" || mode === "reading") return mode;
   throw new ApiError("BAD_REQUEST", 400, "mode が不正です");
@@ -198,132 +155,87 @@ export function getSessionSnapshot(sessionId: string): SessionRecord | null {
   return inMemorySessions.get(sessionId) ?? null;
 }
 
-function pickCandidateWords(markdown: string): string[] {
-  const words = markdown
-    .toLowerCase()
+function getSentencesFromMarkdown(markdown: string): string[] {
+  const cleaned = markdown
+    .replace(/<[^>]+>/g, " ")
     .replace(/```[\s\S]*?```/g, " ")
-    .replace(/[^a-z0-9\s-]/g, " ")
-    .split(/\s+/)
-    .map((w) => w.trim())
-    .filter((w) => w.length >= 4)
-    .filter((w) => /^[a-z][a-z0-9-]*$/.test(w))
-    .filter((w) => !STOPWORDS.has(w));
-
-  const uniq: string[] = [];
-  const seen = new Set<string>();
-  for (const w of words) {
-    if (seen.has(w)) continue;
-    seen.add(w);
-    uniq.push(w);
-    if (uniq.length >= 50) break;
-  }
-  return uniq;
-}
-
-function buildClozePrompt(markdown: string, target: string): string {
-  const sentences = markdown
+    .replace(/`[^`]+`/g, " ")
     .replace(/\s+/g, " ")
+    .trim();
+
+  if (!cleaned) return [];
+
+  return cleaned
     .split(/(?<=[.!?])\s+/)
-    .map((s) => s.trim());
-
-  const hit = sentences.find((s) => s.toLowerCase().includes(target.toLowerCase()));
-  if (!hit) {
-    return `Choose the best word: ____ (${target})`;
-  }
-
-  const replaced = hit.replace(new RegExp(`\\b${target}\\b`, "i"), "____");
-  return replaced;
+    .map((s) => s.trim())
+    .filter((s) => s.length > 0);
 }
 
-function pickChoices(
-  candidates: string[],
-  correct: string,
-): { choices: string[]; correctIndex: number } {
-  const pool = candidates.filter((w) => w !== correct);
-  const distractors: string[] = [];
-  for (const w of pool) {
-    distractors.push(w);
-    if (distractors.length >= 3) break;
-  }
+type GeneratedQuizItem = {
+  prompt: string;
+  choices: string[];
+  correctIndex: 0 | 1 | 2 | 3;
+  explanation: string;
+};
 
-  const choices = [correct, ...distractors].slice(0, 4);
-  while (choices.length < 4) choices.push(correct);
-
-  return { choices, correctIndex: 0 };
-}
-
-async function generateExplanation(word: string, mode: Mode, sourceUrl: string): Promise<string> {
-  const ExplanationSchema = z.object({ explanation: z.string() });
-
-  const prompt =
-    `Explain the English term or phrase: ${word}\n` +
-    `Mode: ${mode}\n` +
-    `Include: meaning, technical background, and typical usage scenario.\n` +
-    `Keep it concise (2-4 sentences).\n` +
-    `Source: ${sourceUrl}`;
-
-  try {
-    const parsed = await createOpenAIParsedText(
-      prompt,
-      STRUCTURED_OUTPUTS_MODEL,
-      ExplanationSchema,
-      "term_explanation",
-    );
-    return parsed.explanation.trim();
-  } catch {
-    throw new ApiError(
-      "INTERNAL",
-      500,
-      "問題の生成に失敗しました。しばらくしてから再試行してください。",
-    );
-  }
-}
-
-async function generateExplanationsBatch(
-  words: string[],
+async function generateQuizItemsFromText(
+  text: string,
   mode: Mode,
   sourceUrl: string,
-): Promise<Map<string, string>> {
-  if (words.length === 0) return new Map();
+  sourceTitle: string | null,
+): Promise<GeneratedQuizItem[]> {
+  const trimmed = text.trim();
+  if (!trimmed) return [];
 
-  const ExplanationsBatchSchema = z.object({
-    items: z.array(
-      z.object({
-        term: z.string(),
-        explanation: z.string(),
-      }),
-    ),
+  const QuizItemsSchema = z.object({
+    items: z
+      .array(
+        z.object({
+          prompt: z.string(),
+          // NOTE: OpenAI Structured Outputs は JSON Schema の tuple 表現（items が配列）を受け付けないため、
+          // 「配列 + min/max=4」で表現する。
+          choices: z.array(z.string()).min(4).max(4),
+          correctIndex: z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3)]),
+          explanation: z.string(),
+        }),
+      )
+      .min(1)
+      .max(10),
   });
 
   const prompt =
+    "あなたは『英語と技術の両方を学べるプログラマー向け英語学習サイト』のクイズ作成者です。\n" +
+    "英語学習サイトであるため、出題内容は技術知識を前提とせず、英文を読むことで解ける内容にしてください。\n" +
+    "扱う文章は技術ドキュメント（APIドキュメント/仕様/README/設計書など）です。\n" +
     `Mode: ${mode}\n` +
     `Source: ${sourceUrl}\n` +
-    "For each term, write a concise explanation including: meaning, technical background, and a typical usage scenario.\n" +
-    "Keep each explanation short (2-4 sentences).\n" +
-    "Terms:\n" +
-    words.map((w) => `- ${w}`).join("\n");
+    `Title: ${sourceTitle ?? ""}\n` +
+    "要件（厳守）:\n" +
+    "- 基本は10問作る。ただし入力テキストが短く、10問を自然に作ることが難しい場合は 1〜9問でもよい。\n" +
+    "- word: 入力された英文内の重要な英単語/英語フレーズを1つ選び、『日本語の意味』を4択で問う。\n" +
+    "- reading: 入力された英文の『日本語としての意味/訳』を4択で問う。\n" +
+    "- prompt(問題文), choices(選択肢), explanation(解説)はすべて日本語。\n" +
+    "- choices は必ず4つ。正解は correctIndex(0-3) で示す。\n" +
+    "- 選択肢は『よくある誤読/別の語義/似た概念』など、学習価値がある紛らわしさにする（ただし重複や同義反復は避ける）。\n" +
+    "- 解説は1文で簡潔に。\n" +
+    "\n" +
+    "入力テキスト:\n" +
+    trimmed;
 
-  try {
-    const parsed = await createOpenAIParsedText(
-      prompt,
-      STRUCTURED_OUTPUTS_MODEL,
-      ExplanationsBatchSchema,
-      "term_explanations",
-    );
+  const parsed = await createOpenAIParsedText(
+    prompt,
+    STRUCTURED_OUTPUTS_MODEL,
+    QuizItemsSchema,
+    "quiz_items_ja",
+    { maxOutputTokens: 4096 },
+  );
 
-    const map = new Map<string, string>();
-    for (const item of parsed.items) {
-      if (!item.term.trim()) continue;
-      map.set(item.term, item.explanation.trim());
-    }
-    return map;
-  } catch {
-    throw new ApiError(
-      "INTERNAL",
-      500,
-      "問題の生成に失敗しました。しばらくしてから再試行してください。",
-    );
-  }
+  return parsed.items.map((item) => ({
+    ...item,
+    prompt: item.prompt.trim(),
+    explanation: item.explanation.trim(),
+    choices: item.choices.map((c) => c.trim()),
+  }));
 }
 
 export async function startQuizSession(
@@ -331,10 +243,9 @@ export async function startQuizSession(
   bindings?: unknown,
 ): Promise<StartSessionResponse> {
   const extracted = await fetchAndExtractDocument(input.url);
-  const candidates = pickCandidateWords(extracted.markdown);
   const plannedCount = 10;
-  const actualCount = Math.min(plannedCount, candidates.length);
-  if (actualCount <= 0) {
+  const text = getSentencesFromMarkdown(extracted.markdown).join("\n");
+  if (!text.trim()) {
     throw new ApiError(
       "UPSTREAM_PARSE_FAILED",
       502,
@@ -344,43 +255,28 @@ export async function startQuizSession(
 
   const sessionId = crypto.randomUUID();
 
-  const selectedWords = candidates.slice(0, actualCount);
-  const batch = await generateExplanationsBatch(selectedWords, input.mode, extracted.sourceUrl);
-
-  const explanationPairs = await Promise.all(
-    selectedWords.map(async (word) => {
-      const fromBatch = batch.get(word);
-      if (fromBatch) return [word, fromBatch] as const;
-
-      const fallback = await generateExplanation(word, input.mode, extracted.sourceUrl);
-      return [word, fallback] as const;
-    }),
+  const generated = await generateQuizItemsFromText(
+    text,
+    input.mode,
+    extracted.sourceUrl,
+    extracted.title,
   );
 
-  const explanations = new Map<string, string>(explanationPairs);
+  const actualCount = generated.length;
+  if (actualCount <= 0) {
+    throw new ApiError("INTERNAL", 500, "問題の生成に失敗しました");
+  }
 
-  const questions: QuestionRecord[] = await Promise.all(
-    selectedWords.map(async (word) => {
-      const { choices, correctIndex } = pickChoices(candidates, word);
-      const prompt =
-        input.mode === "reading"
-          ? buildClozePrompt(extracted.markdown, word)
-          : `Choose the correct term: ${word}`;
-
-      const explanation = explanations.get(word) ?? "";
-
-      return {
-        questionId: crypto.randomUUID(),
-        sessionId,
-        prompt,
-        choices,
-        correctIndex,
-        explanation,
-        sourceUrl: extracted.sourceUrl,
-        sourceQuoteText: extracted.sourceQuoteText,
-      };
-    }),
-  );
+  const questions: QuestionRecord[] = generated.map((item) => ({
+    questionId: crypto.randomUUID(),
+    sessionId,
+    prompt: item.prompt,
+    choices: item.choices as [string, string, string, string],
+    correctIndex: item.correctIndex,
+    explanation: item.explanation,
+    sourceUrl: extracted.sourceUrl,
+    sourceQuoteText: extracted.sourceQuoteText,
+  }));
 
   const session: SessionRecord = {
     sessionId,

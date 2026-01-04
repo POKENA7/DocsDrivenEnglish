@@ -8,14 +8,27 @@ vi.mock("@/lib/openaiClient", () => {
     OPENAI_TIMEOUT_MS: 1000,
     createOpenAIParsedText: vi.fn(
       async (_input: string, _model: string, _schema: unknown, schemaName: string) => {
-        if (schemaName === "term_explanations") {
-          const terms = Array.from(_input.matchAll(/^-\s+([a-z0-9-]+)\s*$/gim)).map((m) => m[1]);
+        if (schemaName === "quiz_items_ja") {
           return {
-            items: terms.map((term) => ({ term, explanation: "dummy" })),
+            items: [
+              {
+                prompt:
+                  "次の英文の意味として最も適切なものを選んでください。\n英文: Some content for quiz.",
+                choices: ["ダミー1", "ダミー2", "ダミー3", "ダミー4"],
+                correctIndex: 0,
+                explanation: "ダミー解説",
+              },
+            ],
           };
         }
 
-        return { explanation: "dummy" };
+        return {
+          term: "term",
+          prompt: "ダミー",
+          choices: ["ダミー1", "ダミー2", "ダミー3", "ダミー4"],
+          correctIndex: 0,
+          explanation: "ダミー解説",
+        };
       },
     ),
     createOpenAIResponse: vi.fn(async () => {

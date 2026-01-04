@@ -6,9 +6,20 @@ vi.mock("@/lib/openaiClient", () => {
   return {
     OPENAI_MAX_OUTPUT_TOKENS: 10,
     OPENAI_TIMEOUT_MS: 1000,
-    createOpenAIParsedText: vi.fn(async () => {
-      return { explanation: "dummy" };
-    }),
+    createOpenAIParsedText: vi.fn(
+      async (_input: string, _model: string, _schema: unknown, schemaName: string) => {
+        if (schemaName === "quiz_items_ja") {
+          return { items: [] };
+        }
+        return {
+          term: "term",
+          prompt: "ダミー",
+          choices: ["ダミー1", "ダミー2", "ダミー3", "ダミー4"],
+          correctIndex: 0,
+          explanation: "ダミー解説",
+        };
+      },
+    ),
     createOpenAIResponse: vi.fn(async () => {
       return {
         output_text: "dummy",

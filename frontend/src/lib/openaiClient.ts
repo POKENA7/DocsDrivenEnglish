@@ -6,8 +6,8 @@ import { z } from "zod";
 
 import { getEnv } from "@/app/env/env";
 
-export const OPENAI_TIMEOUT_MS = 8_000;
-export const OPENAI_MAX_OUTPUT_TOKENS = 1_000;
+export const OPENAI_TIMEOUT_MS = 90_000;
+export const OPENAI_MAX_OUTPUT_TOKENS = 2_048;
 
 let cachedClient: OpenAI | null = null;
 
@@ -56,7 +56,62 @@ export async function createOpenAIParsedText<TSchema extends z.ZodTypeAny>(
       { signal: controller.signal },
     );
 
-    return response.output_parsed;
+    console.log("[openai] response = ", response);
+
+    const outputParsed = response.output_parsed;
+    if (outputParsed !== null) {
+      console.log("[openai] responses.parse success", {
+        schemaName,
+        model: response.model,
+        responseId: response.id,
+      });
+      return outputParsed;
+    }
+
+    const status = (response as unknown as { status?: string }).status;
+    const incompleteDetails = (response as unknown as { incomplete_details?: unknown })
+      .incomplete_details;
+    if (status === "incomplete" || incompleteDetails) {
+      console.log("[openai] responses.parse incomplete", {
+        schemaName,
+        model: response.model,
+        responseId: response.id,
+        status,
+        incompleteDetails,
+        maxOutputTokens,
+      });
+
+      throw new Error("OpenAI response was incomplete (likely max_output_tokens reached)");
+    }
+
+    // NOTE: まれに SDK 側の都合で output_parsed が null になることがあるため、
+    // output_text から JSON として復元して Zod で検証する。
+    const rawText = response.output_text;
+    if (!rawText) {
+      throw new Error("OpenAI response.output_text is empty (output_parsed is null)");
+    }
+
+    let json: unknown;
+    try {
+      json = JSON.parse(rawText) as unknown;
+    } catch (e) {
+      console.log("[openai] responses.parse fallback JSON.parse failed", {
+        schemaName,
+        model: response.model,
+        responseId: response.id,
+        rawTextHead: rawText.slice(0, 400),
+      });
+      throw e;
+    }
+    const parsedByZod = schema.parse(json) as z.infer<TSchema>;
+
+    console.log("[openai] responses.parse success (fallback)", {
+      schemaName,
+      model: response.model,
+      responseId: response.id,
+    });
+
+    return parsedByZod;
   } finally {
     clearTimeout(timeoutId);
   }

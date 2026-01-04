@@ -45,5 +45,7 @@ export function toErrorResponse(c: Context, error: unknown) {
     return c.json({ message: messageForApiError(error) }, error.status);
   }
 
+  console.error("Unexpected error:", error);
+
   return c.json({ message: "サーバーエラーが発生しました" }, 500);
 }
