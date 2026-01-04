@@ -51,6 +51,7 @@ description: "Task list for feature implementation"
 - [X] T013 [P] OpenAI client を server side のみでラップし、timeout / max output を固定（`frontend/src/lib/openaiClient.ts`）
 - [X] T014 [P] HTML fetch + Readability + turndown + URL validation（http/https/empty 等）を `document` domain にコロケーションして実装（`frontend/src/app/api/[[...route]]/document.ts`）
 - [X] T015 [P] Clerk（App Router）を導入し auth 判定 util と middleware を追加（`frontend/src/middleware.ts`, `frontend/src/lib/auth.ts`）
+- [X] T016 [P] Vitest で `server-only` を扱うための shim を追加（`frontend/tests/shims/server-only.ts`, `frontend/vitest.config.ts`）
 - [X] T017 API routing を domain ごとに分割する土台を作成（`frontend/src/app/api/[[...route]]/document.ts`, `frontend/src/app/api/[[...route]]/quiz.ts`, `frontend/src/app/api/[[...route]]/history.ts`）
 
 **Checkpoint**: Foundation ready - user story 実装に着手可能
@@ -135,7 +136,33 @@ Note（RSC）:
 
 ---
 
-## Phase 6: Polish & Cross-Cutting Concerns
+## Phase 6: Refactoring（hooks化 + Hono RPC + SWR）
+
+**Purpose**: Phase 7（Polish）に入る前に、UI側の責務分離と data fetching の統一を行い、保守性を上げる。
+
+Scope:
+- 各 feature の `.tsx` から「state / event handler / fetch」を可能な限り custom hook に移す
+- data fetching は `hono` の RPC client + `SWR`（`useSWR` / `useSWRMutation`）に統一する
+
+Non-goal:
+- UI/UX の変更（見た目や画面遷移の追加）はしない
+
+- [ ] T045 Hono RPC client を作成し、typed client を UI から利用できる形にする（`frontend/src/app/api/[[...route]]/route.ts`, `frontend/src/lib/honoRpcClient.ts`）
+- [ ] T046 SWR の fetcher（Hono RPC client ベース）と共通設定（error/retry 方針）を追加（`frontend/src/lib/swr.ts`）
+
+- [ ] T047 [P] `.tsx` のロジックを `learn` の custom hook に切り出し、UI を最小化（`frontend/src/app/(features)/learn/_components/LearnPage.tsx`, `frontend/src/app/(features)/learn/_hooks/useLearnStart.ts`）
+- [ ] T048 [P] `.tsx` のロジックを `session` の custom hook に切り出し、UI を最小化（`frontend/src/app/(features)/session/_components/SessionPage.tsx`, `frontend/src/app/(features)/session/_hooks/useQuizSession.ts`, `frontend/src/app/(features)/session/_hooks/useQuizAnswer.ts`）
+- [ ] T049 [P] `.tsx` のロジックを `history` の custom hook に切り出し、UI を最小化（`frontend/src/app/(features)/history/_components/HistoryPage.tsx`, `frontend/src/app/(features)/history/_hooks/useHistorySummary.ts`）
+
+- [ ] T050 `learn` の data fetching/mutation を Hono RPC + SWR に移行（`frontend/src/app/(features)/learn/_api/actions.ts`, `frontend/src/app/(features)/learn/_api/query.ts`, `frontend/src/app/(features)/learn/_components/LearnPage.tsx`）
+- [ ] T051 `session` の data fetching/mutation を Hono RPC + SWR に移行（`frontend/src/app/(features)/session/_api/actions.ts`, `frontend/src/app/(features)/session/_api/query.ts`, `frontend/src/app/(features)/session/_components/SessionPage.tsx`）
+- [ ] T052 `history` の data fetching を Hono RPC + SWR に移行（`frontend/src/app/(features)/history/_api/actions.ts`, `frontend/src/app/(features)/history/_api/query.ts`, `frontend/src/app/(features)/history/_components/HistoryPage.tsx`）
+
+**Checkpoint**: 主要 feature（learn/session/history）の UI が hooks 主体になり、fetch が Hono RPC + SWR に統一されている
+
+---
+
+## Phase 7: Polish & Cross-Cutting Concerns
 
 **Purpose**: 複数 story に跨る改善（性能/運用/ドキュメント）
 
@@ -143,16 +170,16 @@ Note（RSC / Client Boundary）:
 - `page.tsx` / `layout.tsx` は原則 Server Components を維持する
 - state/event が必要な部品のみ route segment 配下の `_components` に切り出して `"use client"` を付ける
 
-- [ ] T045 API error と UI error を統一し、edge case（URL不正/timeout/抽出失敗）で理由が分かる文言に揃える（`frontend/src/app/api/[[...route]]/errors.ts`, `frontend/src/app/(marketing)/_components/StartForm.tsx`）
-- [ ] T046 生成コスト/速度のため、解説生成を session start 時にまとめて行い、OpenAI call の timeout/max output を最終調整（`frontend/src/lib/openaiClient.ts`, `frontend/src/app/api/[[...route]]/quiz.ts`）
-- [ ] T047 [P] OpenAPI と実装の差分をレビューし、必要なら契約を更新（`specs/001-dev-english-learning/contracts/openapi.yaml`）
-- [ ] T048 [P] quickstart を実行検証し、差分があれば更新（`specs/001-dev-english-learning/quickstart.md`）
+- [ ] T053 API error と UI error を統一し、edge case（URL不正/timeout/抽出失敗）で理由が分かる文言に揃える（`frontend/src/app/api/[[...route]]/errors.ts`, `frontend/src/app/(marketing)/_components/StartForm.tsx`）
+- [ ] T054 生成コスト/速度のため、解説生成を session start 時にまとめて行い、OpenAI call の timeout/max output を最終調整（`frontend/src/lib/openaiClient.ts`, `frontend/src/app/api/[[...route]]/quiz.ts`）
+- [ ] T055 [P] OpenAPI と実装の差分をレビューし、必要なら契約を更新（`specs/001-dev-english-learning/contracts/openapi.yaml`）
+- [ ] T056 [P] quickstart を実行検証し、差分があれば更新（`specs/001-dev-english-learning/quickstart.md`）
 
 ---
 
 ## Dependencies & Execution Order
 
-- Setup（Phase 1）→ Foundational（Phase 2）→ US1（Phase 3）→ US2（Phase 4）→ US3（Phase 5）→ Polish（Phase 6）
+- Setup（Phase 1）→ Foundational（Phase 2）→ US1（Phase 3）→ US2（Phase 4）→ US3（Phase 5）→ Refactoring（Phase 6）→ Polish（Phase 7）
 - US2 は US1 の UI/セッション前提に依存
 - US3 は auth + DB + attempt 保存の前提に依存
 
@@ -169,7 +196,9 @@ US2 (P2)
 	↓
 US3 (P3)
 	↓
-Phase 6 (Polish)
+Phase 6 (Refactoring)
+	↓
+Phase 7 (Polish)
 ```
 
 ## User Story Dependencies
@@ -183,6 +212,7 @@ Phase 6 (Polish)
 - Setup: T003/T004/T005 は並列可能
 - Foundational: T010/T012/T013/T014/T015/T016/T017 は並列可能
 - US1: T018/T019/T020/T021/T022（tests）と、T023（schema/migration）は並列に進めやすい
+- Refactoring: T047/T048/T049 は並列可能（feature ごとに別ファイルで分割）
 
 ## Parallel Examples（User Story 別）
 
