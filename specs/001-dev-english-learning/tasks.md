@@ -30,7 +30,7 @@ description: "Task list for feature implementation"
 **Purpose**: プロジェクト初期化と開発基盤の整備（Next.js / Cloudflare / lint / test）
 
 - [ ] T001 Next.js App Router（TypeScript）を公式推奨で初期化し `frontend/` を作成（`frontend/package.json`, `frontend/src/app/layout.tsx`）
-- [ ] T002 App Router の route colocation 方針どおり、`(features)` と各featureの雛形（`page.tsx` + `_components/_api/_hooks/_utils`）を作成（`frontend/src/app/(features)/layout.tsx`, `frontend/src/app/(features)/mode/`, `frontend/src/app/(features)/session/`, `frontend/src/app/(features)/history/`, `frontend/src/app/(features)/document/`）
+- [ ] T002 App Router の route colocation 方針どおり、`(features)` と各featureの雛形（`page.tsx` + `_components/_api/_hooks/_utils`）を作成（`frontend/src/app/(features)/layout.tsx`, `frontend/src/app/(features)/session/`, `frontend/src/app/(features)/history/`, `frontend/src/app/(features)/learn/`）
 - [ ] T003 [P] Prettier を導入し ESLint と競合しない設定を追加（`frontend/.prettierrc.cjs`, `frontend/.prettierignore`, `frontend/package.json`）
 - [ ] T004 [P] Vitest を導入し unit/integration の土台を作成（`frontend/vitest.config.ts`, `frontend/tests/unit/`, `frontend/tests/integration/`）
 - [ ] T005 [P] shadcn/ui を初期化し design system primitives を利用可能にする（`frontend/components.json`, `frontend/src/components/`）
@@ -45,13 +45,12 @@ description: "Task list for feature implementation"
 
 - [ ] T008 Drizzle + Cloudflare D1 の初期セットアップ（client/schema, server-only）を追加（`frontend/src/db/client.ts`, `frontend/src/db/schema.ts`）
 - [ ] T009 D1 migration（generate/apply）を scripts 化し quickstart と一致させる（`frontend/drizzle.config.ts`, `frontend/package.json`, `specs/001-dev-english-learning/quickstart.md`）
-- [ ] T010 [P] env/secrets を valibot で validation する（server-only）仕組みを追加（`frontend/src/server/env.ts`）
+- [ ] T010 [P] env/secrets を valibot で validation する（server-only）仕組みを追加（`frontend/src/app/env/env.ts`）
 - [ ] T011 Next.js API Routes catch-all + Hono app の基盤を実装（`frontend/src/app/api/[[...route]]/route.ts`）
 - [ ] T012 [P] API の共通 error 形式と mapping を作成（`frontend/src/app/api/[[...route]]/errors.ts`）
-- [ ] T013 [P] OpenAI client を server side のみでラップし、timeout / max output を固定（`frontend/src/server/openai/client.ts`）
-- [ ] T014 [P] HTML fetch + Readability + turndown の抽出パイプラインを共通関数化（`frontend/src/server/document/extract.ts`）
-- [ ] T015 [P] URL validation（http/https/empty 等）を共通 util として作成（`frontend/src/server/validation/url.ts`）
-- [ ] T016 [P] Clerk（App Router）を導入し auth 判定 util と middleware を追加（`frontend/src/middleware.ts`, `frontend/src/server/auth.ts`）
+- [ ] T013 [P] OpenAI client を server side のみでラップし、timeout / max output を固定（`frontend/src/lib/openaiClient.ts`）
+- [ ] T014 [P] HTML fetch + Readability + turndown + URL validation（http/https/empty 等）を `document` domain にコロケーションして実装（`frontend/src/app/api/[[...route]]/document.ts`）
+- [ ] T015 [P] Clerk（App Router）を導入し auth 判定 util と middleware を追加（`frontend/src/middleware.ts`, `frontend/src/lib/auth.ts`）
 - [ ] T017 API routing を domain ごとに分割する土台を作成（`frontend/src/app/api/[[...route]]/document.ts`, `frontend/src/app/api/[[...route]]/quiz.ts`, `frontend/src/app/api/[[...route]]/history.ts`）
 
 **Checkpoint**: Foundation ready - user story 実装に着手可能
@@ -66,8 +65,8 @@ description: "Task list for feature implementation"
 
 ### Tests（US1）
 
-- [ ] T018 [P] [US1] URL validation の unit test を追加（`frontend/tests/unit/url-validation.test.ts`）
-- [ ] T019 [P] [US1] document extraction（Readability + turndown）の unit test を追加（`frontend/tests/unit/document-extract.test.ts`）
+- [ ] T018 [P] [US1] URL validation の unit test を追加（対象実装: `frontend/src/app/api/[[...route]]/document.ts`, test: `frontend/tests/unit/url-validation.test.ts`）
+- [ ] T019 [P] [US1] document extraction（Readability + turndown）の unit test を追加（対象実装: `frontend/src/app/api/[[...route]]/document.ts`, test: `frontend/tests/unit/document-extract.test.ts`）
 - [ ] T020 [P] [US1] `POST /api/quiz/session`（url+mode）成功の integration test を追加（`frontend/tests/integration/quiz-session.test.ts`）
 - [ ] T021 [P] [US1] `POST /api/quiz/session`（URL不正/取得失敗/抽出失敗）の integration test を追加（`frontend/tests/integration/quiz-session-errors.test.ts`）
 - [ ] T022 [P] [US1] `POST /api/quiz/answer` の integration test を追加（`frontend/tests/integration/quiz-answer.test.ts`）
@@ -75,14 +74,14 @@ description: "Task list for feature implementation"
 ### Implementation（US1）
 
 - [ ] T023 [US1] D1 schema（StudySession/Question の最小）を追加し migration を生成（`frontend/src/db/schema.ts`, `frontend/src/db/migrations/`）
-- [ ] T024 [US1] quiz 生成（word/reading, 4 choices, function words exclude）を実装（`frontend/src/server/quiz/generate.ts`）
-- [ ] T025 [US1] 解説生成（英語の意味 + 技術背景 + 使用シーン）を session start 時に各Questionにつき1つ生成する（`frontend/src/server/quiz/explain.ts`）
-- [ ] T026 [US1] Session/Question の永続化（作成/取得）を repository として実装（`frontend/src/server/repositories/sessionRepo.ts`）
-- [ ] T027 [US1] `POST /api/quiz/session` の入力（url+mode）validation と error mapping を実装（`frontend/src/app/api/[[...route]]//quiz.ts`, `frontend/src/app/api/[[...route]]/errors.ts`）
+- [ ] T024 [US1] quiz 生成（word/reading, 4 choices, function words exclude）を `POST /api/quiz/session` 実装内にコロケーション（同一ファイル内の関数として）して実装（`frontend/src/app/api/[[...route]]/quiz.ts`）
+- [ ] T025 [US1] 解説生成（英語の意味 + 技術背景 + 使用シーン）を session start 時に各Questionにつき1つ生成する（同一ファイル内の関数として）実装（`frontend/src/app/api/[[...route]]/quiz.ts`）
+- [ ] T026 [US1] Session/Question の永続化（作成/取得）を repository 相当として（同一ファイル内の関数として）実装（`frontend/src/app/api/[[...route]]/quiz.ts`）
+- [ ] T027 [US1] `POST /api/quiz/session` の入力（url+mode）validation と error mapping を実装（`frontend/src/app/api/[[...route]]/quiz.ts`, `frontend/src/app/api/[[...route]]/errors.ts`）
 - [ ] T028 [US1] `POST /api/quiz/session`（URL→fetch→extract→最大10問+解説生成→session開始）を実装（`frontend/src/app/api/[[...route]]/quiz.ts`）
 - [ ] T029 [US1] `POST /api/quiz/answer`（採点 + 解説 + 出典）を実装（`frontend/src/app/api/[[...route]]/quiz.ts`）
-- [ ] T030 [US1] URL入力（Top）画面を実装（`frontend/src/app/(marketing)/page.tsx`, `frontend/src/app/(marketing)/_components/StartForm.tsx`）
-- [ ] T031 [US1] Mode 選択画面を実装（`frontend/src/app/(features)/mode/page.tsx`, `frontend/src/app/(features)/mode/_components/ModePage.tsx`）
+- [ ] T030 [US1] Landing（Top）画面を実装（学習開始は `/learn` へ誘導） （`frontend/src/app/(marketing)/page.tsx`）
+- [ ] T031 [US1] `/learn` で URL入力 + mode選択 + 学習開始（`POST /api/quiz/session`）まで完結する画面を実装（`frontend/src/app/(features)/learn/page.tsx`, `frontend/src/app/(features)/learn/_components/LearnPage.tsx`, `frontend/src/app/(features)/learn/_api/actions.ts`）
 - [ ] T032 [US1] Quiz 画面（問題表示/選択/確定→結果表示→次へ）を実装（`frontend/src/app/(features)/session/[sessionId]/page.tsx`, `frontend/src/app/(features)/session/_components/SessionPage.tsx`）
 - [ ] T033 [US1] セッション完了（10問 or 全X問）UI と「続行（次の10問）」導線を実装（`frontend/src/app/(features)/session/[sessionId]/complete/page.tsx`, `frontend/src/app/(features)/session/_components/SessionCompletePage.tsx`）
 - [ ] T034 [US1] 出典表示（引用テキスト + 元URL）を UI に組み込む（`frontend/src/app/(features)/session/_components/SourceAttribution.tsx`）
@@ -126,9 +125,9 @@ Note（RSC）:
 
 ### Implementation（US3）
 
-- [ ] T040 [US3] Attempt の保存を「ログイン時のみ userId 付き」で行う repository を実装（`frontend/src/server/repositories/attemptRepo.ts`）
-- [ ] T041 [US3] history 集計 service（attemptCount/correctRate/studyDays）を実装（`frontend/src/server/history/summary.ts`）
-- [ ] T042 [US3] `GET /api/history/summary` を実装（`frontend/src/app/api/[[...route]]/routes/history.ts`）
+- [ ] T040 [US3] Attempt の保存を「ログイン時のみ userId 付き」で行う repository 相当を（同一ファイル内の関数として）実装（`frontend/src/app/api/[[...route]]/history.ts`）
+- [ ] T041 [US3] history 集計 service（attemptCount/correctRate/studyDays）を（同一ファイル内の関数として）実装（`frontend/src/app/api/[[...route]]/history.ts`）
+- [ ] T042 [US3] `GET /api/history/summary` を実装（`frontend/src/app/api/[[...route]]/history.ts`）
 - [ ] T043 [US3] 履歴画面（ログイン時は集計表示、未ログイン時は誘導）を完成（`frontend/src/app/(features)/history/_components/HistoryPage.tsx`）
 - [ ] T044 [US3] Clerk UI（Sign in/out）導線を最小箇所に追加（`frontend/src/app/(features)/layout.tsx`, `frontend/src/app/(features)/_components/AuthButton.tsx`）
 
@@ -145,7 +144,7 @@ Note（RSC / Client Boundary）:
 - state/event が必要な部品のみ route segment 配下の `_components` に切り出して `"use client"` を付ける
 
 - [ ] T045 API error と UI error を統一し、edge case（URL不正/timeout/抽出失敗）で理由が分かる文言に揃える（`frontend/src/app/api/[[...route]]/errors.ts`, `frontend/src/app/(marketing)/_components/StartForm.tsx`）
-- [ ] T046 生成コスト/速度のため、解説生成を session start 時にまとめて行い、OpenAI call の timeout/max output を最終調整（`frontend/src/server/openai/client.ts`, `frontend/src/server/quiz/explain.ts`）
+- [ ] T046 生成コスト/速度のため、解説生成を session start 時にまとめて行い、OpenAI call の timeout/max output を最終調整（`frontend/src/lib/openaiClient.ts`, `frontend/src/app/api/[[...route]]/quiz.ts`）
 - [ ] T047 [P] OpenAPI と実装の差分をレビューし、必要なら契約を更新（`specs/001-dev-english-learning/contracts/openapi.yaml`）
 - [ ] T048 [P] quickstart を実行検証し、差分があれば更新（`specs/001-dev-english-learning/quickstart.md`）
 

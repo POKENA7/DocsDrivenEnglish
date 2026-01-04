@@ -34,7 +34,7 @@ sequenceDiagram
   participant HistAPI as API /api/history/summary
   participant OpenAI as OpenAI API
 
-  User->>Web: /document でURL入力 + mode選択して学習開始
+  User->>Web: /learn でURL入力 + mode選択して学習開始
   Web->>QuizAPI: POST /api/quiz/session { url, mode }
   Note right of QuizAPI: URL検証→HTML fetch→本文抽出→
   Note right of QuizAPI: （最大）10問+解説を生成→セッション開始

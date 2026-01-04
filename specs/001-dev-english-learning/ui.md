@@ -7,7 +7,7 @@
 
 ## 目的
 
-本ドキュメントは、MVPの「各ページで何を表示するか（特に document ページ）」と「ユーザーがどう遷移するか」を、実装者が迷わない粒度で整理する。
+本ドキュメントは、MVPの「各ページで何を表示するか（特に learn ページ）」と「ユーザーがどう遷移するか」を、実装者が迷わない粒度で整理する。
 
 - 画面表示は基本 **日本語**
 - 教材（問題文 / 引用）は基本 **英語**
@@ -17,22 +17,19 @@
 ## ルーティング一覧（MVP）
 
 - `/`（Marketing）: サービス概要 + 学習開始導線
-- `/document`（Document）: URL入力 + 検証 + mode 選択（word / reading）+ 学習開始
+- `/learn`（Learn）: URL入力 + 検証 + mode 選択（word / reading）+ 学習開始
 - `/session/[sessionId]`（Session）: 出題→回答→解説→次へ
 - `/session/[sessionId]/complete`（Session Complete）: セッション完了サマリ + 続行導線
 - `/history`（History）: 学習履歴（未ログイン時はログイン誘導）
 
-Optional（互換/実装都合）:
-- `/mode`（Mode）: `ui.md` のUXでは不要。残す場合は `/document` へ redirect するか、同等UIを表示する。
-
 Notes:
-- `spec.md` の「トップページ」は、UX上は `/`（Marketing）として扱い、学習の入力は `/document` に分離する（MVPの最小構成で導線が明確になるため）。
+- `spec.md` の「トップページ」は、UX上は `/`（Marketing）として扱い、学習の入力は `/learn` に分離する（MVPの最小構成で導線が明確になるため）。
 
 ## 画面遷移（全体）
 
 ```mermaid
 flowchart LR
-  A[/(marketing)] -->|学習を始める| B[/document]
+  A[/(marketing)] -->|学習を始める| B[/learn]
   B -->|URL+modeで開始| D[/session/:sessionId]
   D -->|最後の解説を確認| E[/session/:sessionId/complete]
   E -->|続行| B
@@ -64,7 +61,7 @@ flowchart LR
 - fetch/抽出失敗: 画面上部（main の先頭）にエラー枠で表示し、再試行導線を必ず出す
 - OpenAI生成失敗/timeout: 同上（再試行、またはURL入力へ戻る）
 
-## `/document`（Documentページ）
+## `/learn`（Learnページ）
 
 ### 目的
 
@@ -122,12 +119,7 @@ Notes:
 
 ## `/mode`（Modeページ）
 
-MVPのUXとしては `/document` で完結するため **不要**。
-
-実装上 `/mode` を残す場合は、以下のいずれかにする:
-
-- `/document` へ redirect する（最小）
-- `/document` と同等のUIを表示し、`POST /api/quiz/session` を呼ぶ
+MVPでは `/mode` は **作らない**（`/learn` に統合）。
 
 ## `/session/[sessionId]`（Sessionページ）
 
@@ -183,8 +175,8 @@ MVPのUXとしては `/document` で完結するため **不要**。
   - 「全X問」
   - 「正答率」
 - CTA:
-  - Primary: 「続行して次の10問」→ `/mode?url=<sameUrl>`（同URLで再開）
-  - Secondary: 「別のURLで学習」→ `/document`
+  - Primary: 「続行して次の10問」→ `/learn?url=<sameUrl>&mode=<sameMode>`（同じ内容で再開）
+  - Secondary: 「別のURLで学習」→ `/learn`
   - Link: 「履歴を見る」→ `/history`
 
 Notes:
@@ -227,7 +219,7 @@ Notes:
 - ヒーロー:
   - タイトル（例: 「技術ドキュメントで英語を学ぶ」）
   - サブコピー（短く）
-  - CTA: 「学習を始める」→ `/document`
+  - CTA: 「学習を始める」→ `/learn`
 - 使い方（3ステップ程度）:
   - URL入力 → モード選択 → 10問クイズ
 
@@ -235,7 +227,7 @@ Notes:
 
 ## 実装のための最小データ受け渡し（UI観点）
 
-- `/document` → `/session/[sessionId]`: APIレスポンスの `sessionId`
+- `/learn` → `/session/[sessionId]`: APIレスポンスの `sessionId`
 - `/session` → `/complete`: `sessionId`（path param）
 
 Notes:

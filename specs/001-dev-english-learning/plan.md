@@ -91,13 +91,13 @@ frontend/                          # Next.js app（create-next-app で生成）
 │   │   │   │   │   └── ...
 │   │   │   │   ├── _hooks/
 │   │   │   │   └── _utils/
-│   │   │   └── document/
-│   │   │       ├── page.tsx               # routing only → _components/DocumentPage.tsx（URL入力 + mode選択 + 学習開始）
+│   │   │   └── learn/
+│   │   │       ├── page.tsx               # routing only → _components/LearnPage.tsx（URL入力 + mode選択 + 学習開始）
 │   │   │       ├── _api/
 │   │   │       │   ├── actions.ts
 │   │   │       │   └── query.ts
 │   │   │       ├── _components/
-│   │   │       │   ├── DocumentPage.tsx
+│   │   │       │   ├── LearnPage.tsx
 │   │   │       │   └── ...
 │   │   │       ├── _hooks/
 │   │   │       └── _utils/
@@ -118,7 +118,7 @@ frontend/                          # Next.js app（create-next-app で生成）
 **Structure Decision**: feature ごとの実装は `frontend/src/app/(features)/<feature>` にコロケーションし、`page.tsx` は routing の責務のみを担う。実 UI は `_components` 配下へ集約し、RSC-first を前提に Client Boundary を最小化する。
 
 Notes:
-- 学習開始フローは `/document` で URL入力 + mode選択 + `POST /api/quiz/session` まで完結する（`/mode` は作らない）。
+- 学習開始フローは `/learn` で URL入力 + mode選択 + `POST /api/quiz/session` まで完結する（`/mode` は作らない）。
 
 ### UI Folder Rules（Colocation + Container/Presentational）
 

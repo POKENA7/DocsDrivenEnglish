@@ -47,7 +47,7 @@ Prettier は追加で導入し、ESLint と競合しないように `eslint-conf
 
 ### features ディレクトリ
 
-feature 実装は `frontend/src/app/(features)/<feature>` にコロケーションする（例: `frontend/src/app/(features)/document/*`）。
+feature 実装は `frontend/src/app/(features)/<feature>` にコロケーションする（例: `frontend/src/app/(features)/learn/*`）。
 
 ## Local Development（2モード）
 
