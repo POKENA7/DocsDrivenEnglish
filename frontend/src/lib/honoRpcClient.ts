@@ -1,6 +1,6 @@
 import { hc } from "hono/client";
 
-import type { AppType } from "@/app/api/[[...route]]/route";
+import type { AppType } from "@/app/api/[[...route]]/app";
 
 export type HonoRpcClient = {
   quiz: {
@@ -24,4 +24,4 @@ export function createHonoRpcClient(baseUrl?: string) {
   return hc<AppType>(baseUrl ?? "") as unknown as HonoRpcClient;
 }
 
-export const honoRpcClient = createHonoRpcClient();
+export const honoRpcClient = createHonoRpcClient("/api");

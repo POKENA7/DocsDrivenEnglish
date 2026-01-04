@@ -3,6 +3,11 @@ main = ".open-next/worker.js"
 compatibility_date = "2026-01-04"
 compatibility_flags = ["nodejs_compat"]
 
+[vars]
+# OpenNext runs on Cloudflare Workers (edge runtime). Setting this avoids Next's
+# Node-only environment patching that can fail under Workers bundling.
+NEXT_RUNTIME = "edge"
+
 [assets]
 directory = ".open-next/assets"
 binding = "ASSETS"
@@ -10,4 +15,8 @@ binding = "ASSETS"
 [[d1_databases]]
 binding = "DB"
 database_name = "docs-driven-english"
+# NOTE: Wrangler requires database_id even for local operations.
+# Replace this placeholder with the real ID after running: `wrangler d1 create docs-driven-english`
+database_id = "00000000-0000-0000-0000-000000000000"
+migrations_dir = "src/db/migrations"
 # database_id は `wrangler d1 create` 後に設定する

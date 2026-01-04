@@ -15,8 +15,8 @@
     "preview": "wrangler dev --local --persist-to .wrangler/state",
     "deploy": "wrangler deploy",
     "db:generate": "drizzle-kit generate",
-    "db:migrate:local": "wrangler d1 migrations apply docs-driven-english --local --persist-to .wrangler/state",
-    "db:migrate:remote": "wrangler d1 migrations apply docs-driven-english --remote"
+    "db:migrate:local": "wrangler d1 migrations apply DB --local --persist-to .wrangler/state",
+    "db:migrate:remote": "wrangler d1 migrations apply DB --remote"
   },
   "dependencies": {
     "@clerk/nextjs": "^6.36.5",
@@ -27,7 +27,7 @@
     "hono": "^4.11.3",
     "linkedom": "^0.18.12",
     "lucide-react": "^0.562.0",
-    "next": "16.1.1",
+    "next": "15",
     "openai": "^6.15.0",
     "react": "19.2.3",
     "react-dom": "19.2.3",
@@ -46,7 +46,7 @@
     "@types/turndown": "^5.0.6",
     "drizzle-kit": "^0.31.8",
     "eslint": "^9",
-    "eslint-config-next": "16.1.1",
+    "eslint-config-next": "15",
     "eslint-config-prettier": "^10.1.8",
     "prettier": "^3.7.4",
     "tailwindcss": "^4",

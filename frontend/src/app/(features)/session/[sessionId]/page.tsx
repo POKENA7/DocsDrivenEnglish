@@ -6,8 +6,13 @@ type Params = {
   sessionId: string;
 };
 
-export default function SessionIdPage({ params }: { params: Params }) {
-  const session = getSessionSnapshot(params.sessionId);
+type PageProps = {
+  params: Promise<Params>;
+};
+
+export default async function SessionIdPage({ params }: PageProps) {
+  const { sessionId } = await params;
+  const session = getSessionSnapshot(sessionId);
 
   if (!session) {
     return (

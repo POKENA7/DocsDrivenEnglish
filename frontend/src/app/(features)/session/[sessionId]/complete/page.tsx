@@ -6,12 +6,17 @@ type Params = {
   sessionId: string;
 };
 
-export default function SessionComplete({ params }: { params: Params }) {
-  const session = getSessionSnapshot(params.sessionId);
+type PageProps = {
+  params: Promise<Params>;
+};
+
+export default async function SessionComplete({ params }: PageProps) {
+  const { sessionId } = await params;
+  const session = getSessionSnapshot(sessionId);
 
   return (
     <SessionCompletePage
-      sessionId={params.sessionId}
+      sessionId={sessionId}
       inputUrl={session?.inputUrl ?? null}
       mode={session?.mode ?? null}
     />
