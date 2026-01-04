@@ -35,35 +35,13 @@ components:
       type: string
       enum: [word, reading]
 
-    StartFromUrlRequest:
+    StartSessionRequest:
       type: object
-      required: [url]
+      required: [url, mode]
       properties:
         url:
           type: string
           format: uri
-
-    StartFromUrlResponse:
-      type: object
-      required: [corpusId, sourceUrl, sourceQuoteText]
-      properties:
-        corpusId:
-          type: string
-        sourceUrl:
-          type: string
-          format: uri
-        sourceQuoteText:
-          type: string
-        title:
-          type: string
-          nullable: true
-
-    StartSessionRequest:
-      type: object
-      required: [corpusId, mode]
-      properties:
-        corpusId:
-          type: string
         mode:
           $ref: '#/components/schemas/Mode'
 
@@ -100,7 +78,7 @@ components:
 
     StartSessionResponse:
       type: object
-      required: [sessionId, plannedCount, actualCount, questions]
+      required: [sessionId, plannedCount, actualCount, questions, sourceUrl, sourceQuoteText]
       properties:
         sessionId:
           type: string
@@ -110,6 +88,14 @@ components:
         actualCount:
           type: integer
           description: 10 未満の場合はその値（全X問で終了）
+        sourceUrl:
+          type: string
+          format: uri
+        sourceQuoteText:
+          type: string
+        title:
+          type: string
+          nullable: true
         questions:
           type: array
           items:
@@ -158,40 +144,10 @@ components:
           description: distinct days（ログインユーザーのみ）
 
 paths:
-  /api/document/start:
-    post:
-      tags: [document]
-      summary: 入力URLから教材（corpus）を作成
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/StartFromUrlRequest'
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/StartFromUrlResponse'
-        '400':
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '502':
-          description: Upstream fetch/parse failure
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-
-  /api/quiz/session/start:
+  /api/quiz/session:
     post:
       tags: [quiz]
-      summary: セッション開始（最大10問）
+      summary: セッション開始（入力URLを教材として最大10問）
       requestBody:
         required: true
         content:
@@ -211,11 +167,17 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+        '502':
+          description: Upstream fetch/parse failure
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 
   /api/quiz/answer:
     post:
       tags: [quiz]
-      summary: 回答提出（採点 + 解説 + 出典）
+      summary: 回答提出（採点 + 解説 + 出典）※解説はsession開始時に生成済み
       requestBody:
         required: true
         content:

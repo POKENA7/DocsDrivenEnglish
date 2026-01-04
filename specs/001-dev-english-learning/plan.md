@@ -46,10 +46,14 @@ specs/001-dev-english-learning/
 ├── research.md          # Phase 0 output
 ├── data-model.md        # Phase 1 output
 ├── quickstart.md        # Phase 1 output
+├── sequence.md          # Quiz learning sequence (Mermaid)
 ├── contracts/           # Phase 1 output
 │   └── openapi.yaml
 └── tasks.md             # Phase 2 output (/speckit.tasks)
 ```
+
+関連ドキュメント:
+- シーケンス図: [sequence.md](sequence.md)
 
 ### Source Code (repository root)
 

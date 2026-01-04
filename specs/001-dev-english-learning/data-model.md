@@ -17,52 +17,25 @@ Fields (conceptual):
 - `clerkUserId` (string, required, unique)
 - `createdAt` (datetime)
 
-### DocumentSource
+### DocumentSource（optional / non-MVP）
 
-- Purpose: 学習対象となる入力URL（1ページ）と取得結果のメタデータ
+MVPでは `/api/quiz/session` に URL入力〜本文抽出〜出題開始を一本化するため、教材（corpus）を永続化する entity は必須ではない。
+
+一方で、将来的に同一URLの再利用（cache）や抽出の再現性を高めたい場合に備えて、DocumentSource を optional として残す。
+
+- Purpose: 学習対象となる入力URL（1ページ）と取得結果のメタデータ（cache/運用向け）
 
 Fields:
 - `documentSourceId` (string, required, unique)
 - `inputUrl` (string, required)
-- `canonicalUrl` (string, required)
+- `canonicalUrl` (string, optional)
 - `fetchedAt` (datetime, required)
 - `title` (string, optional)
-- `contentHash` (string, required) — 同一ページ判定用
+- `contentHash` (string, optional) — 同一ページ判定用
 
 Validation:
 - `inputUrl` は `https://` を推奨（`http://` は許容するかは実装で決定）
 - URL長の上限を設定（例: 2048 chars）
-
-### LearningCorpus
-
-- Purpose: DocumentSource から抽出した本文を「出題可能な教材」として保持する
-
-Fields:
-- `corpusId` (string, required, unique)
-- `documentSourceId` (FK, required)
-- `extractedText` (string, required) — 出題生成の基礎
-- `extractedMarkdown` (string, optional) — code block を保持した表現
-- `sourceQuoteText` (string, required) — FR-011 用の短い引用
-- `sourceUrl` (string, required) — 入力URL
-- `createdAt` (datetime, required)
-- `extractionMeta` (json/string, optional) — 抽出方式/閾値/制限等
-
-Relationship:
-- DocumentSource 1 - 1..N LearningCorpus（入力URLを再学習した場合に複数生成し得る）
-
-### ExtractedTerm
-
-- Purpose: 単語モード出題の候補
-
-Fields:
-- `termId` (string, required, unique)
-- `corpusId` (FK, required)
-- `term` (string, required) — 例: "deprecated", "workaround"
-- `frequency` (number, required)
-- `exampleSentence` (string, optional) — 文脈表示用
-
-Validation:
-- 機能語（冠詞/前置詞/助動詞など）は除外（FR-005）
 
 ### Question
 
@@ -70,7 +43,7 @@ Validation:
 
 Fields:
 - `questionId` (string, required, unique)
-- `corpusId` (FK, required)
+- `sessionId` (FK to StudySession, required)
 - `mode` (enum: "word" | "reading", required)
 - `prompt` (string, required) — 問題文
 - `choices` (array[4] of string, required)
@@ -81,7 +54,7 @@ Fields:
 - `createdAt` (datetime, required)
 
 Notes:
-- SC-001（最初の問題表示まで3秒）を優先するため、`explanation` は「回答確定後（SubmitAnswer）」に生成し、必要に応じて保存する（MVPでは保存しない運用も可）。
+- 生成コスト/速度の観点から、`explanation` は session start 時に各Questionにつき1つ生成し、Question に保存する。
 
 ### StudySession
 
@@ -90,12 +63,20 @@ Notes:
 Fields:
 - `sessionId` (string, required, unique)
 - `userId` (FK to User, optional) — 未ログインは null
-- `corpusId` (FK, required)
+- `inputUrl` (string, required)
+- `sourceUrl` (string, required) — canonicalize 後のURLなど
+- `sourceQuoteText` (string, required)
+- `title` (string, optional)
+- `fetchedAt` (datetime, required)
 - `mode` (enum, required)
 - `plannedCount` (number, required) — 原則10
 - `actualCount` (number, required) — 10未満の場合はX
 - `createdAt` (datetime, required)
 - `completedAt` (datetime, optional)
+
+Notes:
+- 本設計では「教材（corpus）を永続化しない」ため、本文抽出結果（extractedText / extractedMarkdown）は session start 時に生成して question 生成へ利用し、必要に応じて破棄する。
+- 出典表示（FR-011）のために `sourceUrl` / `sourceQuoteText` は StudySession と Question（および SubmitAnswerResponse）で参照できるようにする。
 
 ### Attempt
 

@@ -127,12 +127,13 @@
 ### Key Entities *(include if feature involves data)*
 
 - **User**: ログイン状態を持つユーザー（匿名ユーザーを含む）
-- **Document Source**: 学習対象となるドキュメントのURLと取得日時
-- **Learning Corpus**: ドキュメントから取り込まれた本文テキスト（出題の元）
-- **Extracted Term**: 抽出された英単語/英語表現（出現回数、例文などの属性を持つ）
-- **Question**: 出題単位（モード、問題文、選択肢、正解、出典）
+- **Study Session**: 10問単位の学習セッション（inputUrl/mode、出典用sourceUrl/sourceQuoteText、開始/完了時刻など）
+- **Question**: 出題単位（sessionに紐づくモード、問題文、選択肢、正解、出典）
 - **Attempt**: 1問に対する回答結果（正誤、回答時刻、対象Question）
 - **Study Summary**: 学習履歴の集計（問題数、正答率、継続学習日数）
+
+Notes:
+- MVPではユーザー入力URLをその場で教材として扱うため、"Learning Corpus" の永続化は行わない（必要に応じて将来 cache 用の "Document Source" を追加可能）
 
 ## Success Criteria *(mandatory)*
 
