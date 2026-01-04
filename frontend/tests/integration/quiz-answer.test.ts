@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { apiApp } from "@/app/api/[[...route]]/route";
+import { apiApp } from "@/app/api/[[...route]]/app";
 
 vi.mock("@clerk/nextjs/server", () => {
   return {
