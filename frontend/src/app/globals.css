@@ -123,3 +123,118 @@
     @apply bg-background text-foreground;
   }
 }
+
+@layer base {
+  html {
+    text-rendering: geometricPrecision;
+  }
+
+  body {
+    @apply min-h-dvh antialiased;
+  }
+
+  ::selection {
+    background: color-mix(in oklch, var(--primary) 24%, transparent);
+  }
+
+  :focus-visible {
+    outline: 2px solid color-mix(in oklch, var(--ring) 70%, transparent);
+    outline-offset: 2px;
+  }
+}
+
+@layer utilities {
+  .app-bg {
+    background:
+      radial-gradient(80rem 40rem at 18% 10%, color-mix(in oklch, var(--primary) 16%, transparent), transparent 55%),
+      radial-gradient(60rem 30rem at 92% 18%, color-mix(in oklch, var(--foreground) 10%, transparent), transparent 60%),
+      radial-gradient(40rem 40rem at 30% 90%, color-mix(in oklch, var(--accent) 12%, transparent), transparent 55%),
+      linear-gradient(to bottom, color-mix(in oklch, var(--background) 92%, transparent), color-mix(in oklch, var(--background) 100%, transparent));
+  }
+
+  .app-grid {
+    background-image:
+      linear-gradient(to right, color-mix(in oklch, var(--border) 55%, transparent) 1px, transparent 1px),
+      linear-gradient(to bottom, color-mix(in oklch, var(--border) 55%, transparent) 1px, transparent 1px);
+    background-size: 28px 28px;
+    background-position: center;
+    mask-image: radial-gradient(circle at 20% 0%, black 0%, transparent 55%);
+    opacity: 0.55;
+    pointer-events: none;
+  }
+
+  .container-page {
+    @apply mx-auto w-full max-w-2xl px-6;
+  }
+
+  .page {
+    @apply py-10;
+  }
+
+  .heading-1 {
+    @apply text-2xl font-semibold tracking-tight;
+  }
+
+  .heading-2 {
+    @apply text-lg font-semibold tracking-tight;
+  }
+
+  .lede {
+    @apply text-sm text-muted-foreground;
+  }
+
+  .card {
+    @apply rounded-2xl border bg-card/70 p-6 shadow-sm backdrop-blur;
+  }
+
+  .card-compact {
+    @apply rounded-2xl border bg-card/70 p-4 shadow-sm backdrop-blur;
+  }
+
+  .btn {
+    @apply inline-flex h-10 items-center justify-center rounded-xl px-4 text-sm font-medium transition;
+    @apply focus-visible:outline-none;
+    @apply disabled:pointer-events-none disabled:opacity-50;
+  }
+
+  .btn-primary {
+    @apply bg-primary text-primary-foreground;
+    @apply hover:opacity-95 active:opacity-90;
+  }
+
+  .btn-ghost {
+    @apply bg-transparent text-foreground;
+    @apply hover:bg-muted/60;
+  }
+
+  .input {
+    @apply h-10 w-full rounded-xl border bg-background px-3 text-sm;
+    @apply shadow-sm;
+    @apply placeholder:text-muted-foreground/80;
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40;
+  }
+
+  .choice {
+    @apply flex w-full items-start gap-3 rounded-2xl border bg-card/50 p-4 text-left text-sm transition;
+    @apply hover:bg-card/70;
+  }
+
+  .choice:has(input:checked) {
+    border-color: color-mix(in oklch, var(--primary) 55%, var(--border));
+    background: color-mix(in oklch, var(--primary) 8%, var(--card));
+  }
+
+  .choice[data-disabled="true"] {
+    @apply opacity-60;
+  }
+
+  .reveal {
+    @apply animate-in fade-in slide-in-from-bottom-2 duration-500;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .reveal {
+      animation: none !important;
+    }
+  }
+}

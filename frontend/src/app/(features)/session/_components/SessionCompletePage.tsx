@@ -38,35 +38,40 @@ export default function SessionCompletePage(props: {
   }
 
   return (
-    <main className="mx-auto max-w-2xl px-6 py-10">
-      <h1 className="text-xl font-semibold tracking-tight">セッション完了</h1>
+    <main className="container-page page">
+      <div className="reveal">
+        <h1 className="heading-1">セッション完了</h1>
+        <p className="mt-2 lede">このセッションの問題をすべて回答しました。</p>
+      </div>
 
-      <p className="mt-4 text-sm text-muted-foreground">
-        このセッションの問題をすべて回答しました。
-      </p>
+      <section className="mt-6 card reveal" style={{ animationDelay: "80ms" }}>
+        {props.inputUrl && props.mode ? (
+          <form onSubmit={onSubmit} className="space-y-4">
+            <input type="hidden" name="url" value={props.inputUrl} />
+            <input type="hidden" name="mode" value={props.mode} />
 
-      {props.inputUrl && props.mode ? (
-        <form onSubmit={onSubmit} className="mt-6 space-y-4">
-          <input type="hidden" name="url" value={props.inputUrl} />
-          <input type="hidden" name="mode" value={props.mode} />
+            {error ? <p className="text-sm text-destructive">{error}</p> : null}
 
-          {error ? <p className="text-sm text-destructive">{error}</p> : null}
-
-          <button
-            type="submit"
-            disabled={mutation.isMutating}
-            className="inline-flex h-10 items-center justify-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground disabled:opacity-50"
-          >
-            {mutation.isMutating ? "開始中..." : "続行（次の10問）"}
-          </button>
-        </form>
-      ) : (
-        <div className="mt-6">
-          <Link className="text-sm underline" href="/learn">
-            /learn へ戻る
-          </Link>
-        </div>
-      )}
+            <div className="flex flex-wrap items-center gap-3">
+              <button type="submit" disabled={mutation.isMutating} className="btn btn-primary">
+                {mutation.isMutating ? "開始中..." : "続行（次の10問）"}
+              </button>
+              <Link href="/learn" className="btn btn-ghost">
+                別のURLで学習
+              </Link>
+            </div>
+          </form>
+        ) : (
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              URL または Mode が見つかりませんでした。
+            </p>
+            <Link className="btn btn-primary w-fit" href="/learn">
+              /learn へ戻る
+            </Link>
+          </div>
+        )}
+      </section>
     </main>
   );
 }

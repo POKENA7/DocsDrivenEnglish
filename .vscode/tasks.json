@@ -1,0 +1,12 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "frontend: preview",
+			"type": "shell",
+			"command": "cd frontend && npm run preview",
+			"isBackground": true,
+			"problemMatcher": []
+		}
+	]
+}
