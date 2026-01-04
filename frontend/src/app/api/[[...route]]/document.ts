@@ -19,18 +19,18 @@ const MAX_QUOTE_CHARS = 300;
 export function parseHttpUrl(input: string): URL {
   const trimmed = input.trim();
   if (!trimmed) {
-    throw new ApiError("BAD_REQUEST", 400, "URL is required");
+    throw new ApiError("BAD_REQUEST", 400, "URL を入力してください");
   }
 
   let url: URL;
   try {
     url = new URL(trimmed);
   } catch {
-    throw new ApiError("BAD_REQUEST", 400, "Invalid URL");
+    throw new ApiError("BAD_REQUEST", 400, "URL が不正です");
   }
 
   if (url.protocol !== "http:" && url.protocol !== "https:") {
-    throw new ApiError("BAD_REQUEST", 400, "URL must be http/https");
+    throw new ApiError("BAD_REQUEST", 400, "URL は http/https のみ対応しています");
   }
 
   return url;
@@ -50,18 +50,46 @@ export async function fetchHtml(url: URL): Promise<string> {
     });
 
     if (!res.ok) {
-      throw new ApiError("UPSTREAM_FETCH_FAILED", 502, `Upstream fetch failed (${res.status})`);
+      throw new ApiError(
+        "UPSTREAM_FETCH_FAILED",
+        502,
+        `ドキュメントの取得に失敗しました（HTTP ${res.status}）`,
+      );
     }
 
     const contentType = res.headers.get("content-type") ?? "";
     if (!contentType.includes("text/html") && !contentType.includes("application/xhtml")) {
-      throw new ApiError("UPSTREAM_FETCH_FAILED", 502, "Upstream is not HTML");
+      throw new ApiError(
+        "UPSTREAM_FETCH_FAILED",
+        502,
+        "HTML のページではないため読み込めませんでした",
+      );
     }
 
     return await res.text();
   } catch (e) {
     if (e instanceof ApiError) throw e;
-    throw new ApiError("UPSTREAM_FETCH_FAILED", 502, "Upstream fetch failed");
+
+    const hasName = (value: unknown): value is { name: unknown } => {
+      return typeof value === "object" && value !== null && "name" in value;
+    };
+
+    const isAbort =
+      (e instanceof Error && e.name === "AbortError") || (hasName(e) && e.name === "AbortError");
+
+    if (isAbort) {
+      throw new ApiError(
+        "UPSTREAM_FETCH_FAILED",
+        502,
+        "ドキュメントの取得がタイムアウトしました。時間をおいて再試行してください。",
+      );
+    }
+
+    throw new ApiError(
+      "UPSTREAM_FETCH_FAILED",
+      502,
+      "ドキュメントの取得に失敗しました。URL が公開されているか確認してください。",
+    );
   } finally {
     clearTimeout(timeoutId);
   }
@@ -115,13 +143,13 @@ export function extractDocument(html: string, url: URL): ExtractedDocument {
 
   const parsed = reader.parse();
   if (!parsed || !parsed.content) {
-    throw new ApiError("UPSTREAM_PARSE_FAILED", 502, "Document extraction failed");
+    throw new ApiError("UPSTREAM_PARSE_FAILED", 502, "本文の抽出に失敗しました");
   }
 
   const turndown = buildTurndown();
   const markdown = turndown.turndown(parsed.content).trim();
   if (!markdown) {
-    throw new ApiError("UPSTREAM_PARSE_FAILED", 502, "Document extraction failed");
+    throw new ApiError("UPSTREAM_PARSE_FAILED", 502, "本文の抽出に失敗しました");
   }
 
   const sourceQuoteText = makeQuoteFromExtract(parsed.excerpt, parsed.content);

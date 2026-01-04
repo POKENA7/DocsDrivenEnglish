@@ -173,10 +173,10 @@ Note（RSC / Client Boundary）:
 - `page.tsx` / `layout.tsx` は原則 Server Components を維持する
 - state/event が必要な部品のみ route segment 配下の `_components` に切り出して `"use client"` を付ける
 
-- [ ] T053 API error と UI error を統一し、edge case（URL不正/timeout/抽出失敗）で理由が分かる文言に揃える（`frontend/src/app/api/[[...route]]/errors.ts`, `frontend/src/app/(marketing)/_components/StartForm.tsx`）
-- [ ] T054 生成コスト/速度のため、解説生成を session start 時にまとめて行い、OpenAI call の timeout/max output を最終調整（`frontend/src/lib/openaiClient.ts`, `frontend/src/app/api/[[...route]]/quiz.ts`）
-- [ ] T055 [P] OpenAPI と実装の差分をレビューし、必要なら契約を更新（`specs/001-dev-english-learning/contracts/openapi.yaml`）
-- [ ] T056 [P] quickstart を実行検証し、差分があれば更新（`specs/001-dev-english-learning/quickstart.md`）
+- [X] T053 API error と UI error を統一し、edge case（URL不正/timeout/抽出失敗）で理由が分かる文言に揃える（`frontend/src/app/api/[[...route]]/errors.ts`, `frontend/src/app/(marketing)/_components/StartForm.tsx`）
+- [X] T054 生成コスト/速度のため、解説生成を session start 時にまとめて行い、OpenAI call の timeout/max output を最終調整（`frontend/src/lib/openaiClient.ts`, `frontend/src/app/api/[[...route]]/quiz.ts`）
+- [X] T055 [P] OpenAPI と実装の差分をレビューし、必要なら契約を更新（`specs/001-dev-english-learning/contracts/openapi.yaml`）
+- [X] T056 [P] quickstart を実行検証し、差分があれば更新（`specs/001-dev-english-learning/quickstart.md`）
 
 ---
 

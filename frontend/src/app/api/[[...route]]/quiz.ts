@@ -187,7 +187,7 @@ const STOPWORDS = new Set([
 
 function assertMode(mode: unknown): Mode {
   if (mode === "word" || mode === "reading") return mode;
-  throw new ApiError("BAD_REQUEST", 400, "Invalid mode");
+  throw new ApiError("BAD_REQUEST", 400, "mode が不正です");
 }
 
 export function getSessionSnapshot(sessionId: string): SessionRecord | null {
@@ -265,6 +265,64 @@ async function generateExplanation(word: string, mode: Mode, sourceUrl: string):
   return outputText.trim();
 }
 
+function extractJsonFromText(text: string): unknown {
+  const start = text.indexOf("{");
+  const end = text.lastIndexOf("}");
+  if (start < 0 || end < 0 || end <= start) return null;
+
+  const slice = text.slice(start, end + 1);
+  try {
+    return JSON.parse(slice) as unknown;
+  } catch {
+    return null;
+  }
+}
+
+async function generateExplanationsBatch(
+  words: string[],
+  mode: Mode,
+  sourceUrl: string,
+): Promise<Map<string, string>> {
+  if (words.length === 0) return new Map();
+
+  const prompt =
+    "Return ONLY valid JSON (no markdown, no code fences).\n" +
+    'Schema: {"items":[{"term":string,"explanation":string}]}\n' +
+    `Mode: ${mode}\n` +
+    `Source: ${sourceUrl}\n` +
+    "For each term, write a concise explanation including: meaning, technical background, and a typical usage scenario.\n" +
+    "Keep each explanation short (2-4 sentences).\n" +
+    "Terms:\n" +
+    words.map((w) => `- ${w}`).join("\n");
+
+  const res = (await createOpenAIResponse(prompt, "gpt-4.1-mini")) as unknown;
+
+  if (!res || typeof res !== "object") return new Map();
+  const record = res as Record<string, unknown>;
+  const outputText = record.output_text;
+  if (typeof outputText !== "string") return new Map();
+
+  const parsed = extractJsonFromText(outputText);
+  if (!parsed || typeof parsed !== "object") return new Map();
+
+  const obj = parsed as Record<string, unknown>;
+  const items = obj.items;
+  if (!Array.isArray(items)) return new Map();
+
+  const map = new Map<string, string>();
+  for (const item of items) {
+    if (!item || typeof item !== "object") continue;
+    const r = item as Record<string, unknown>;
+    const term = r.term;
+    const explanation = r.explanation;
+    if (typeof term !== "string" || typeof explanation !== "string") continue;
+    if (!term.trim()) continue;
+    map.set(term, explanation.trim());
+  }
+
+  return map;
+}
+
 export async function startQuizSession(
   input: { url: string; mode: Mode },
   bindings?: unknown,
@@ -274,20 +332,39 @@ export async function startQuizSession(
   const plannedCount = 10;
   const actualCount = Math.min(plannedCount, candidates.length);
   if (actualCount <= 0) {
-    throw new ApiError("UPSTREAM_PARSE_FAILED", 502, "Not enough content");
+    throw new ApiError(
+      "UPSTREAM_PARSE_FAILED",
+      502,
+      "本文から問題を作れませんでした。別のURLで試してください。",
+    );
   }
 
   const sessionId = crypto.randomUUID();
 
+  const selectedWords = candidates.slice(0, actualCount);
+  const batch = await generateExplanationsBatch(selectedWords, input.mode, extracted.sourceUrl);
+
+  const explanationPairs = await Promise.all(
+    selectedWords.map(async (word) => {
+      const fromBatch = batch.get(word);
+      if (fromBatch) return [word, fromBatch] as const;
+
+      const fallback = await generateExplanation(word, input.mode, extracted.sourceUrl);
+      return [word, fallback] as const;
+    }),
+  );
+
+  const explanations = new Map<string, string>(explanationPairs);
+
   const questions: QuestionRecord[] = await Promise.all(
-    candidates.slice(0, actualCount).map(async (word) => {
+    selectedWords.map(async (word) => {
       const { choices, correctIndex } = pickChoices(candidates, word);
       const prompt =
         input.mode === "reading"
           ? buildClozePrompt(extracted.markdown, word)
           : `Choose the correct term: ${word}`;
 
-      const explanation = await generateExplanation(word, input.mode, extracted.sourceUrl);
+      const explanation = explanations.get(word) ?? "";
 
       return {
         questionId: crypto.randomUUID(),
@@ -344,7 +421,7 @@ export async function submitQuizAnswer(
   const db = getOptionalDbFromBindings(bindings);
   const q = await getQuestionIfPossible(db, input.questionId);
   if (!q || q.sessionId !== input.sessionId) {
-    throw new ApiError("BAD_REQUEST", 400, "Question not found");
+    throw new ApiError("BAD_REQUEST", 400, "問題が見つかりませんでした");
   }
 
   const out = {
@@ -373,7 +450,7 @@ const app = new Hono()
   .post("/answer", async (c) => {
     const body = await c.req.json().catch((): unknown => null);
     if (!body || typeof body !== "object") {
-      throw new ApiError("BAD_REQUEST", 400, "Invalid body");
+      throw new ApiError("BAD_REQUEST", 400, "リクエストが不正です");
     }
 
     const record = body as Record<string, unknown>;
@@ -383,10 +460,10 @@ const app = new Hono()
     const selectedIndex = record.selectedIndex;
 
     if (typeof sessionId !== "string" || typeof questionId !== "string") {
-      throw new ApiError("BAD_REQUEST", 400, "Invalid input");
+      throw new ApiError("BAD_REQUEST", 400, "リクエストが不正です");
     }
     if (typeof selectedIndex !== "number" || selectedIndex < 0 || selectedIndex > 3) {
-      throw new ApiError("BAD_REQUEST", 400, "Invalid selectedIndex");
+      throw new ApiError("BAD_REQUEST", 400, "選択肢が不正です");
     }
 
     const out = await submitQuizAnswer({ sessionId, questionId, selectedIndex }, c.env);
@@ -395,7 +472,7 @@ const app = new Hono()
   .post("/session", async (c) => {
     const body = await c.req.json().catch((): unknown => null);
     if (!body || typeof body !== "object") {
-      throw new ApiError("BAD_REQUEST", 400, "Invalid body");
+      throw new ApiError("BAD_REQUEST", 400, "リクエストが不正です");
     }
 
     const record = body as Record<string, unknown>;
@@ -403,7 +480,7 @@ const app = new Hono()
     const url = record.url;
     const mode = assertMode(record.mode);
     if (typeof url !== "string") {
-      throw new ApiError("BAD_REQUEST", 400, "Invalid url");
+      throw new ApiError("BAD_REQUEST", 400, "URL が不正です");
     }
 
     const out = await startQuizSession({ url, mode }, c.env);

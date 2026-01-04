@@ -21,10 +21,29 @@ export class ApiError extends Error {
   }
 }
 
+function messageForApiError(error: ApiError): string {
+  if (error.message && error.message.trim().length > 0) return error.message;
+
+  switch (error.code) {
+    case "BAD_REQUEST":
+      return "リクエストが不正です";
+    case "UNAUTHORIZED":
+      return "ログインが必要です";
+    case "UPSTREAM_FETCH_FAILED":
+      return "ドキュメントの取得に失敗しました";
+    case "UPSTREAM_PARSE_FAILED":
+      return "ドキュメントの解析に失敗しました";
+    case "INTERNAL":
+      return "サーバーエラーが発生しました";
+    default:
+      return "サーバーエラーが発生しました";
+  }
+}
+
 export function toErrorResponse(c: Context, error: unknown) {
   if (error instanceof ApiError) {
-    return c.json({ message: error.message }, error.status);
+    return c.json({ message: messageForApiError(error) }, error.status);
   }
 
-  return c.json({ message: "Internal Server Error" }, 500);
+  return c.json({ message: "サーバーエラーが発生しました" }, 500);
 }

@@ -12,7 +12,7 @@ export async function getOptionalUserId(): Promise<string | null> {
 export async function requireUserId(): Promise<string> {
   const { userId } = await auth();
   if (!userId) {
-    throw new ApiError("UNAUTHORIZED", 401, "Unauthorized");
+    throw new ApiError("UNAUTHORIZED", 401, "ログインが必要です");
   }
   return userId;
 }
