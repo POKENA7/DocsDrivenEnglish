@@ -4,7 +4,7 @@ Auto-generated from all feature plans. Last updated: 2026-01-04
 
 ## Active Technologies
 - TypeScript（Node.js LTS） (001-dev-english-learning)
-- Next.js（App Router）, Hono RPC, TailwindCSS, shadcn/ui, Clerk, Drizzle, OpenAI API, valibot, @mozilla/readability, linkedom, turndown (001-dev-english-learning)
+- Next.js（App Router）, Hono RPC, TailwindCSS, shadcn/ui, Clerk, Drizzle, OpenAI API, zod, @mozilla/readability, linkedom, turndown (001-dev-english-learning)
 - Cloudflare D1（SQLite） (001-dev-english-learning)
 
 
@@ -30,7 +30,7 @@ cd frontend && npm test && npm run lint
 TypeScript（Next.js App Router）: Follow standard conventions
 
 ## Recent Changes
-- 001-dev-english-learning: Added TypeScript（Node.js LTS） + Next.js（App Router）, Hono（RPC）, Drizzle, Cloudflare D1, Clerk, OpenAI API, @mozilla/readability, linkedom/worker, turndown, valibot, TailwindCSS, shadcn/ui
+- 001-dev-english-learning: Added TypeScript（Node.js LTS） + Next.js（App Router）, Hono（RPC）, Drizzle, Cloudflare D1, Clerk, OpenAI API, @mozilla/readability, linkedom/worker, turndown, zod, TailwindCSS, shadcn/ui
 - 001-dev-english-learning: Updated tech context from plan.md
 
 

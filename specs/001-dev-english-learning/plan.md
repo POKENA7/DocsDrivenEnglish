@@ -12,7 +12,7 @@
 ## Technical Context
 
 **Language/Version**: TypeScript（Node.js LTS）  
-**Primary Dependencies**: Next.js（App Router）, Hono（RPC）, Drizzle, Cloudflare D1, Clerk, OpenAI API, @mozilla/readability, linkedom/worker, turndown, valibot, TailwindCSS, shadcn/ui  
+**Primary Dependencies**: Next.js（App Router）, Hono（RPC）, Drizzle, Cloudflare D1, Clerk, OpenAI API, @mozilla/readability, linkedom/worker, turndown, zod, TailwindCSS, shadcn/ui  
 **Storage**: Cloudflare D1（SQLite）  
 **Testing**: Vitest（unit/integration）  
 **Target Platform**: Cloudflare Workers（OpenNext）  

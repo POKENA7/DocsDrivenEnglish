@@ -45,7 +45,7 @@ description: "Task list for feature implementation"
 
 - [X] T008 Drizzle + Cloudflare D1 の初期セットアップ（client/schema, server-only）を追加（`frontend/src/db/client.ts`, `frontend/src/db/schema.ts`）
 - [X] T009 D1 migration（generate/apply）を scripts 化し quickstart と一致させる（`frontend/drizzle.config.ts`, `frontend/package.json`, `specs/001-dev-english-learning/quickstart.md`）
-- [X] T010 [P] env/secrets を valibot で validation する（server-only）仕組みを追加（`frontend/src/app/env/env.ts`）
+- [X] T010 [P] env/secrets を zod で validation する（server-only）仕組みを追加（`frontend/src/app/env/env.ts`）
 - [X] T011 Next.js API Routes catch-all + Hono app の基盤を実装（`frontend/src/app/api/[[...route]]/route.ts`）
 - [X] T012 [P] API の共通 error 形式と mapping を作成（`frontend/src/app/api/[[...route]]/errors.ts`）
 - [X] T013 [P] OpenAI client を server side のみでラップし、timeout / max output を固定（`frontend/src/lib/openaiClient.ts`）
