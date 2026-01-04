@@ -16,6 +16,8 @@ import { fetchAndExtractDocument } from "./document";
 import { ApiError } from "./errors";
 import { recordAttemptIfLoggedIn } from "./history";
 
+import { stripUrlsFromText } from "./_utils/stripUrlsFromText";
+
 type Mode = "word" | "reading";
 
 export type StartSessionResponse = {
@@ -189,6 +191,8 @@ async function generateQuizItemsFromText(
   const trimmed = text.trim();
   if (!trimmed) return [];
 
+  console.log("[quiz] generating quiz items, text =  ", { trimmed: trimmed });
+
   const QuizItemsSchema = z.object({
     items: z
       .array(
@@ -252,7 +256,7 @@ export async function startQuizSession(
 ): Promise<StartSessionResponse> {
   const extracted = await fetchAndExtractDocument(input.url);
   const plannedCount = PLANNED_QUESTION_COUNT;
-  const text = getSentencesFromMarkdown(extracted.markdown).join("\n");
+  const text = stripUrlsFromText(getSentencesFromMarkdown(extracted.markdown).join("\n"));
   if (!text.trim()) {
     throw new ApiError(
       "UPSTREAM_PARSE_FAILED",
