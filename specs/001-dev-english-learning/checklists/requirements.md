@@ -34,3 +34,9 @@
 - Items marked incomplete require spec updates before `/speckit.clarify` or `/speckit.plan`
 
 - Validation pass on 2026-01-03. No clarification markers remaining.
+
+## Manual Test Checklist（US2: 未ログイン体験）
+
+- [ ] 未ログインで `/learn` からセッション開始できる
+- [ ] 5問回答し、セッション内の「学習した問題数」「正答率」が更新される
+- [ ] `/history` にアクセスすると「永続化されない」旨と login CTA が表示される
