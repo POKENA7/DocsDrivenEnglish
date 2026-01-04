@@ -39,7 +39,9 @@ export default function SessionPage({ session }: { session: SessionSnapshot }) {
       <section className="mt-6 space-y-4">
         <div className="card reveal" style={{ animationDelay: "80ms" }}>
           <p className="text-xs font-semibold tracking-tight text-muted-foreground">問題</p>
-          <p className="mt-3 text-sm font-medium leading-relaxed">{current.prompt}</p>
+          <p className="mt-3 whitespace-pre-line text-sm font-medium leading-relaxed">
+            {current.prompt}
+          </p>
 
           <div className="mt-5 grid gap-2">
             {current.choices.map((text, i) => {
@@ -106,7 +108,7 @@ export default function SessionPage({ session }: { session: SessionSnapshot }) {
         {result ? (
           <div className="card reveal" style={{ animationDelay: "140ms" }}>
             <p className="text-xs font-semibold tracking-tight text-muted-foreground">解説</p>
-            <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+            <p className="mt-3 whitespace-pre-line text-sm leading-relaxed text-muted-foreground">
               {result.explanation}
             </p>
             <SourceAttribution

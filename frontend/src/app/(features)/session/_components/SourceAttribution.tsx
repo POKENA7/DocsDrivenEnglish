@@ -13,7 +13,9 @@ export default function SourceAttribution(props: { sourceUrl: string; sourceQuot
         </a>
       </div>
 
-      <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{props.sourceQuoteText}</p>
+      <p className="mt-3 whitespace-pre-line text-sm leading-relaxed text-muted-foreground">
+        {props.sourceQuoteText}
+      </p>
       <p className="mt-3 break-all text-xs text-muted-foreground">{props.sourceUrl}</p>
     </section>
   );
