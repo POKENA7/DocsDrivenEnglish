@@ -75,10 +75,13 @@ Fields:
 - `prompt` (string, required) — 問題文
 - `choices` (array[4] of string, required)
 - `correctIndex` (number 0..3, required)
-- `explanation` (string, required) — 英語の意味 + 技術背景 + 使用シーン（FR-010）
+- `explanation` (string, optional) — 英語の意味 + 技術背景 + 使用シーン（FR-010）
 - `sourceQuoteText` (string, required)
 - `sourceUrl` (string, required)
 - `createdAt` (datetime, required)
+
+Notes:
+- SC-001（最初の問題表示まで3秒）を優先するため、`explanation` は「回答確定後（SubmitAnswer）」に生成し、必要に応じて保存する（MVPでは保存しない運用も可）。
 
 ### StudySession
 
@@ -104,6 +107,7 @@ Fields:
 - `questionId` (FK, required)
 - `selectedIndex` (number 0..3, required)
 - `isCorrect` (boolean, required)
+- `explanation` (string, optional) — 回答時点の解説を固定したい場合に保存する
 - `answeredAt` (datetime, required)
 
 ## Derived / Aggregation

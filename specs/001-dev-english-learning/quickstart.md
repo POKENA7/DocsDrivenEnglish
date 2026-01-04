@@ -10,9 +10,44 @@
 
 - Node.js（LTS）
 - Cloudflare account
-- Wrangler CLI
+- Wrangler CLI（`wrangler`）
 - Clerk account/project
 - OpenAI API key
+
+## Setup（公式推奨の初期化手順）
+
+この repo には `specs/` が存在するため、Next.js は公式推奨の `create-next-app` を使い、アプリ本体を `frontend/` に作成する（`--src-dir` により `frontend/src/*` を使用）。
+
+### Next.js（App Router）
+
+例:
+
+- `npx create-next-app@latest frontend --ts --eslint --tailwind --app --src-dir`
+
+Notes:
+- 以降のコマンドは基本 `frontend/` 配下で実行する
+
+### ESLint + Prettier（lint/format）
+
+ESLint は Next.js の公式テンプレート（`--eslint`）により標準で有効になる。
+
+Prettier は追加で導入し、ESLint と競合しないように `eslint-config-prettier` を入れる。
+
+例:
+
+- `cd frontend`
+- `npm install -D prettier eslint-config-prettier`
+
+### shadcn/ui
+
+例:
+
+- `cd frontend`
+- `npx shadcn@latest init`
+
+### features ディレクトリ
+
+feature 実装は `frontend/src/app/(features)/<feature>` にコロケーションする（例: `frontend/src/app/(features)/document/*`）。
 
 ## Local Development（2モード）
 
@@ -20,8 +55,8 @@
 
 - 目的: UI開発を高速化する（Cloudflare binding 依存を最小化）
 - 例（想定）:
-  - install: `npm install`
-  - run: `npm run dev`
+  - install: `cd frontend && npm install`
+  - run: `cd frontend && npm run dev`
 
 ### 2) Production-like（Cloudflare Workers / OpenNext）
 
@@ -31,23 +66,23 @@
   - D1 は `--persist-to` を固定してローカルDBを維持する
 
 例（想定）:
-- build: `npm run build`
-- preview: `npm run preview`
+- build: `cd frontend && npm run build`
+- preview: `cd frontend && npm run preview`
 
 ## D1（SQLite）
 
 - binding 名: `DB`
 - migration:
   - generate: `drizzle-kit generate`
-  - apply (local): `wrangler d1 migrations apply <DB_NAME> --local --persist-to .wrangler/state`
-  - apply (remote): `wrangler d1 migrations apply <DB_NAME> --remote`
+  - apply (local): `npx wrangler d1 migrations apply <DB_NAME> --local --persist-to .wrangler/state`
+  - apply (remote): `npx wrangler d1 migrations apply <DB_NAME> --remote`
 
 Notes:
 - Drizzle の schema を source of truth とし、migration SQL は生成して運用する
 
 ## Secrets / Env
 
-- Secrets（OpenAI API key, Clerk secrets 等）: `wrangler secret put ...` を利用
+- Secrets（OpenAI API key, Clerk secrets 等）: `npx wrangler secret put ...` を利用
 - Non-secret（`NEXT_PUBLIC_*` 等）: Wrangler の `vars` を利用
 - ローカル用の secret/vars は gitignore 対象とする
 
@@ -58,8 +93,9 @@ Notes:
   2. Worker を deploy
 
 例（想定）:
-- `wrangler d1 migrations apply <DB_NAME> --remote`
-- `wrangler deploy`
+- `cd frontend`
+- `npx wrangler d1 migrations apply <DB_NAME> --remote`
+- `npx wrangler deploy`
 
 ## Reference
 
