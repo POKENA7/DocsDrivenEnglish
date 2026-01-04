@@ -1,13 +1,10 @@
 import "server-only";
 
 import { Readability } from "@mozilla/readability";
-import { Hono } from "hono";
 import { parseHTML } from "linkedom/worker";
 import TurndownService from "turndown";
 
 import { ApiError } from "./errors";
-
-export const documentApp = new Hono();
 
 export type ExtractedDocument = {
   title: string | null;

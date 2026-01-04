@@ -1,19 +1,15 @@
 "use client";
 
-import { useActionState } from "react";
-
-import { startSessionAction } from "../_api/actions";
+import { useLearnStart } from "../_hooks/useLearnStart";
 
 export default function LearnPage() {
-  const [state, action, pending] = useActionState(startSessionAction, {
-    error: null,
-  });
+  const { onSubmit, pending, error } = useLearnStart();
 
   return (
     <main className="mx-auto max-w-2xl px-6 py-10">
       <h1 className="text-xl font-semibold tracking-tight">学習を開始</h1>
 
-      <form action={action} className="mt-6 space-y-6">
+      <form onSubmit={onSubmit} className="mt-6 space-y-6">
         <div className="space-y-2">
           <label className="text-sm font-medium" htmlFor="url">
             URL
@@ -40,7 +36,7 @@ export default function LearnPage() {
           </label>
         </fieldset>
 
-        {state.error ? <p className="text-sm text-destructive">{state.error}</p> : null}
+        {error ? <p className="text-sm text-destructive">{error}</p> : null}
 
         <button
           type="submit"

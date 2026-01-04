@@ -1,7 +1,9 @@
 "use client";
 
-import { useActionState } from "react";
+import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import useSWRMutation from "swr/mutation";
 
 import { continueSessionAction } from "../_api/actions";
 
@@ -10,9 +12,30 @@ export default function SessionCompletePage(props: {
   inputUrl: string | null;
   mode: "word" | "reading" | null;
 }) {
-  const [state, action, pending] = useActionState(continueSessionAction, {
-    error: null,
-  });
+  const router = useRouter();
+  const [error, setError] = useState<string | null>(null);
+
+  const mutation = useSWRMutation(
+    "quiz/session",
+    async (_key, { arg }: { arg: { url: string; mode: "word" | "reading" } }) => {
+      return continueSessionAction(arg);
+    },
+  );
+
+  async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+
+    if (!props.inputUrl || !props.mode) return;
+
+    setError(null);
+    try {
+      const session = await mutation.trigger({ url: props.inputUrl, mode: props.mode });
+      router.push(`/session/${session.sessionId}`);
+    } catch (e) {
+      const message = e instanceof Error ? e.message : "エラーが発生しました";
+      setError(message);
+    }
+  }
 
   return (
     <main className="mx-auto max-w-2xl px-6 py-10">
@@ -23,18 +46,18 @@ export default function SessionCompletePage(props: {
       </p>
 
       {props.inputUrl && props.mode ? (
-        <form action={action} className="mt-6 space-y-4">
+        <form onSubmit={onSubmit} className="mt-6 space-y-4">
           <input type="hidden" name="url" value={props.inputUrl} />
           <input type="hidden" name="mode" value={props.mode} />
 
-          {state.error ? <p className="text-sm text-destructive">{state.error}</p> : null}
+          {error ? <p className="text-sm text-destructive">{error}</p> : null}
 
           <button
             type="submit"
-            disabled={pending}
+            disabled={mutation.isMutating}
             className="inline-flex h-10 items-center justify-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground disabled:opacity-50"
           >
-            {pending ? "開始中..." : "続行（次の10問）"}
+            {mutation.isMutating ? "開始中..." : "続行（次の10問）"}
           </button>
         </form>
       ) : (

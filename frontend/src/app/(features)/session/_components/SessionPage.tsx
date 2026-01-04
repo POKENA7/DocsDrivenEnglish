@@ -1,84 +1,23 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useQuizSession, type SessionSnapshot } from "../_hooks/useQuizSession";
 
 import SourceAttribution from "./SourceAttribution";
 import SessionProgress from "./SessionProgress";
 
-type SessionSnapshot = {
-  sessionId: string;
-  plannedCount: number;
-  actualCount: number;
-  sourceUrl: string;
-  sourceQuoteText: string;
-  title: string | null;
-  questions: Array<{
-    questionId: string;
-    prompt: string;
-    choices: string[];
-    correctIndex: number;
-    explanation: string;
-    sourceUrl: string;
-    sourceQuoteText: string;
-  }>;
-};
-
 export default function SessionPage({ session }: { session: SessionSnapshot }) {
-  const router = useRouter();
-  const [index, setIndex] = useState(0);
-  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
-  const [attemptCount, setAttemptCount] = useState(0);
-  const [correctCount, setCorrectCount] = useState(0);
-  const [result, setResult] = useState<null | {
-    isCorrect: boolean;
-    explanation: string;
-    sourceUrl: string;
-    sourceQuoteText: string;
-  }>(null);
-
-  const current = useMemo(() => session.questions[index], [index, session.questions]);
-
-  async function submit() {
-    if (selectedIndex === null) return;
-
-    const res = await fetch("/api/quiz/answer", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        sessionId: session.sessionId,
-        questionId: current.questionId,
-        selectedIndex,
-      }),
-    });
-
-    const json = await res.json();
-    if (!res.ok) {
-      setResult({
-        isCorrect: false,
-        explanation: json?.message ?? "エラーが発生しました",
-        sourceUrl: session.sourceUrl,
-        sourceQuoteText: session.sourceQuoteText,
-      });
-      return;
-    }
-
-    setResult(json);
-    setAttemptCount((v) => v + 1);
-    if (json.isCorrect) setCorrectCount((v) => v + 1);
-  }
-
-  function next() {
-    const nextIndex = index + 1;
-    if (nextIndex >= session.questions.length) {
-      router.push(`/session/${session.sessionId}/complete`);
-      return;
-    }
-
-    setIndex(nextIndex);
-    setSelectedIndex(null);
-    setResult(null);
-  }
+  const {
+    index,
+    current,
+    selectedIndex,
+    setSelectedIndex,
+    attemptCount,
+    correctCount,
+    result,
+    isSubmitting,
+    submit,
+    next,
+  } = useQuizSession(session);
 
   return (
     <main className="mx-auto max-w-2xl px-6 py-10">
@@ -102,7 +41,7 @@ export default function SessionPage({ session }: { session: SessionSnapshot }) {
                 value={i}
                 checked={selectedIndex === i}
                 onChange={() => setSelectedIndex(i)}
-                disabled={result !== null}
+                disabled={result !== null || isSubmitting}
               />
               {text}
             </label>
@@ -134,7 +73,7 @@ export default function SessionPage({ session }: { session: SessionSnapshot }) {
               type="button"
               className="inline-flex h-10 items-center justify-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground disabled:opacity-50"
               onClick={submit}
-              disabled={selectedIndex === null}
+              disabled={selectedIndex === null || isSubmitting}
             >
               確定
             </button>

@@ -147,16 +147,19 @@ Scope:
 Non-goal:
 - UI/UX の変更（見た目や画面遷移の追加）はしない
 
-- [ ] T045 Hono RPC client を作成し、typed client を UI から利用できる形にする（`frontend/src/app/api/[[...route]]/route.ts`, `frontend/src/lib/honoRpcClient.ts`）
-- [ ] T046 SWR の fetcher（Hono RPC client ベース）と共通設定（error/retry 方針）を追加（`frontend/src/lib/swr.ts`）
 
-- [ ] T047 [P] `.tsx` のロジックを `learn` の custom hook に切り出し、UI を最小化（`frontend/src/app/(features)/learn/_components/LearnPage.tsx`, `frontend/src/app/(features)/learn/_hooks/useLearnStart.ts`）
-- [ ] T048 [P] `.tsx` のロジックを `session` の custom hook に切り出し、UI を最小化（`frontend/src/app/(features)/session/_components/SessionPage.tsx`, `frontend/src/app/(features)/session/_hooks/useQuizSession.ts`, `frontend/src/app/(features)/session/_hooks/useQuizAnswer.ts`）
-- [ ] T049 [P] `.tsx` のロジックを `history` の custom hook に切り出し、UI を最小化（`frontend/src/app/(features)/history/_components/HistoryPage.tsx`, `frontend/src/app/(features)/history/_hooks/useHistorySummary.ts`）
+- [X] T045 Hono RPC client を作成し、typed client を UI から利用できる形にする（`frontend/src/app/api/[[...route]]/route.ts`, `frontend/src/lib/honoRpcClient.ts`）
+- [X] T046 SWR の fetcher（Hono RPC client ベース）と共通設定（error/retry 方針）を追加（`frontend/src/lib/swr.ts`）
 
-- [ ] T050 `learn` の data fetching/mutation を Hono RPC + SWR に移行（`frontend/src/app/(features)/learn/_api/actions.ts`, `frontend/src/app/(features)/learn/_api/query.ts`, `frontend/src/app/(features)/learn/_components/LearnPage.tsx`）
-- [ ] T051 `session` の data fetching/mutation を Hono RPC + SWR に移行（`frontend/src/app/(features)/session/_api/actions.ts`, `frontend/src/app/(features)/session/_api/query.ts`, `frontend/src/app/(features)/session/_components/SessionPage.tsx`）
-- [ ] T052 `history` の data fetching を Hono RPC + SWR に移行（`frontend/src/app/(features)/history/_api/actions.ts`, `frontend/src/app/(features)/history/_api/query.ts`, `frontend/src/app/(features)/history/_components/HistoryPage.tsx`）
+
+- [X] T047 [P] `.tsx` のロジックを `learn` の custom hook に切り出し、UI を最小化（`frontend/src/app/(features)/learn/_components/LearnPage.tsx`, `frontend/src/app/(features)/learn/_hooks/useLearnStart.ts`）
+- [X] T048 [P] `.tsx` のロジックを `session` の custom hook に切り出し、UI を最小化（`frontend/src/app/(features)/session/_components/SessionPage.tsx`, `frontend/src/app/(features)/session/_hooks/useQuizSession.ts`, `frontend/src/app/(features)/session/_hooks/useQuizAnswer.ts`）
+- [X] T049 [P] `.tsx` のロジックを `history` の custom hook に切り出し、UI を最小化（`frontend/src/app/(features)/history/_components/HistoryPage.tsx`, `frontend/src/app/(features)/history/_hooks/useHistorySummary.ts`）
+
+
+- [X] T050 `learn` の data fetching/mutation を Hono RPC + SWR に移行（`frontend/src/app/(features)/learn/_api/actions.ts`, `frontend/src/app/(features)/learn/_api/query.ts`, `frontend/src/app/(features)/learn/_components/LearnPage.tsx`）
+- [X] T051 `session` の data fetching/mutation を Hono RPC + SWR に移行（`frontend/src/app/(features)/session/_api/actions.ts`, `frontend/src/app/(features)/session/_api/query.ts`, `frontend/src/app/(features)/session/_components/SessionPage.tsx`）
+- [X] T052 `history` の data fetching を Hono RPC + SWR に移行（`frontend/src/app/(features)/history/_api/actions.ts`, `frontend/src/app/(features)/history/_api/query.ts`, `frontend/src/app/(features)/history/_components/HistoryPage.tsx`）
 
 **Checkpoint**: 主要 feature（learn/session/history）の UI が hooks 主体になり、fetch が Hono RPC + SWR に統一されている
 

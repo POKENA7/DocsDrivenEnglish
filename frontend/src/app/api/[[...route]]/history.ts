@@ -1,15 +1,13 @@
 import "server-only";
 
+import type { D1Database } from "@cloudflare/workers-types";
+
 import { Hono } from "hono";
 
 import { getOptionalUserId, requireUserId } from "@/lib/auth";
 import { createDb } from "@/db/client";
 import { attempts as attemptsTable } from "@/db/schema";
 import { eq } from "drizzle-orm";
-
-import { ApiError } from "./errors";
-
-export const historyApp = new Hono();
 
 type AttemptRecord = {
   answeredAt: Date;
@@ -55,7 +53,8 @@ export function recordAttemptForUser(userId: string, attempt: AttemptRecord) {
 }
 
 function getOptionalDbFromBindings(bindings: unknown) {
-  const db = (bindings as any)?.DB;
+  const env = bindings as { DB?: D1Database } | null | undefined;
+  const db = env?.DB;
   if (!db) return null;
   return createDb(db);
 }
@@ -81,7 +80,7 @@ export async function recordAttemptIfLoggedIn(attempt: PersistedAttemptInput, bi
   });
 }
 
-historyApp.get("/summary", async (c) => {
+const app = new Hono().get("/summary", async (c) => {
   const userId = await requireUserId();
 
   const db = getOptionalDbFromBindings(c.env);
@@ -102,3 +101,5 @@ historyApp.get("/summary", async (c) => {
 
   return c.json(calculateHistorySummary(attempts));
 });
+
+export default app;

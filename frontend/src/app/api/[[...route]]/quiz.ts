@@ -1,5 +1,7 @@
 import "server-only";
 
+import type { D1Database } from "@cloudflare/workers-types";
+
 import { Hono } from "hono";
 
 import { createOpenAIResponse } from "@/lib/openaiClient";
@@ -11,8 +13,6 @@ import { eq } from "drizzle-orm";
 import { fetchAndExtractDocument } from "./document";
 import { ApiError } from "./errors";
 import { recordAttemptIfLoggedIn } from "./history";
-
-export const quizApp = new Hono();
 
 type Mode = "word" | "reading";
 
@@ -66,7 +66,8 @@ const inMemorySessions = new Map<string, SessionRecord>();
 const inMemoryQuestions = new Map<string, QuestionRecord>();
 
 function getOptionalDbFromBindings(bindings: unknown) {
-  const db = (bindings as any)?.DB;
+  const env = bindings as { DB?: D1Database } | null | undefined;
+  const db = env?.DB;
   if (!db) return null;
   return createDb(db);
 }
@@ -254,8 +255,14 @@ async function generateExplanation(word: string, mode: Mode, sourceUrl: string):
     `Include: meaning, technical background, and typical usage scenario.\n` +
     `Source: ${sourceUrl}`;
 
-  const res: any = await createOpenAIResponse(prompt, "gpt-4.1-mini");
-  return (typeof res?.output_text === "string" && res.output_text.trim()) || "";
+  const res = (await createOpenAIResponse(prompt, "gpt-4.1-mini")) as unknown;
+  if (!res || typeof res !== "object") return "";
+
+  const record = res as Record<string, unknown>;
+  const outputText = record.output_text;
+  if (typeof outputText !== "string") return "";
+
+  return outputText.trim();
 }
 
 export async function startQuizSession(
@@ -362,39 +369,45 @@ export async function submitQuizAnswer(
   return out;
 }
 
-quizApp.post("/session", async (c) => {
-  const body = await c.req.json().catch(() => null);
-  if (!body || typeof body !== "object") {
-    throw new ApiError("BAD_REQUEST", 400, "Invalid body");
-  }
+const app = new Hono()
+  .post("/answer", async (c) => {
+    const body = await c.req.json().catch((): unknown => null);
+    if (!body || typeof body !== "object") {
+      throw new ApiError("BAD_REQUEST", 400, "Invalid body");
+    }
 
-  const url = (body as any).url;
-  const mode = assertMode((body as any).mode);
-  if (typeof url !== "string") {
-    throw new ApiError("BAD_REQUEST", 400, "Invalid url");
-  }
+    const record = body as Record<string, unknown>;
 
-  const out = await startQuizSession({ url, mode }, c.env);
-  return c.json(out);
-});
+    const sessionId = record.sessionId;
+    const questionId = record.questionId;
+    const selectedIndex = record.selectedIndex;
 
-quizApp.post("/answer", async (c) => {
-  const body = await c.req.json().catch(() => null);
-  if (!body || typeof body !== "object") {
-    throw new ApiError("BAD_REQUEST", 400, "Invalid body");
-  }
+    if (typeof sessionId !== "string" || typeof questionId !== "string") {
+      throw new ApiError("BAD_REQUEST", 400, "Invalid input");
+    }
+    if (typeof selectedIndex !== "number" || selectedIndex < 0 || selectedIndex > 3) {
+      throw new ApiError("BAD_REQUEST", 400, "Invalid selectedIndex");
+    }
 
-  const sessionId = (body as any).sessionId;
-  const questionId = (body as any).questionId;
-  const selectedIndex = (body as any).selectedIndex;
+    const out = await submitQuizAnswer({ sessionId, questionId, selectedIndex }, c.env);
+    return c.json(out);
+  })
+  .post("/session", async (c) => {
+    const body = await c.req.json().catch((): unknown => null);
+    if (!body || typeof body !== "object") {
+      throw new ApiError("BAD_REQUEST", 400, "Invalid body");
+    }
 
-  if (typeof sessionId !== "string" || typeof questionId !== "string") {
-    throw new ApiError("BAD_REQUEST", 400, "Invalid input");
-  }
-  if (typeof selectedIndex !== "number" || selectedIndex < 0 || selectedIndex > 3) {
-    throw new ApiError("BAD_REQUEST", 400, "Invalid selectedIndex");
-  }
+    const record = body as Record<string, unknown>;
 
-  const out = await submitQuizAnswer({ sessionId, questionId, selectedIndex }, c.env);
-  return c.json(out);
-});
+    const url = record.url;
+    const mode = assertMode(record.mode);
+    if (typeof url !== "string") {
+      throw new ApiError("BAD_REQUEST", 400, "Invalid url");
+    }
+
+    const out = await startQuizSession({ url, mode }, c.env);
+    return c.json(out);
+  });
+
+export default app;

@@ -1,51 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
 
-type HistorySummary = {
-  attemptCount: number;
-  correctRate: number;
-  studyDays: number;
-};
+import { useHistorySummary } from "../_hooks/useHistorySummary";
 
 export default function HistoryPage() {
-  const [status, setStatus] = useState<"loading" | "authed" | "unauthed" | "error">("loading");
-  const [summary, setSummary] = useState<HistorySummary | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function load() {
-      try {
-        const res = await fetch("/api/history/summary", { method: "GET" });
-
-        if (cancelled) return;
-
-        if (res.status === 401) {
-          setStatus("unauthed");
-          return;
-        }
-
-        if (!res.ok) {
-          setStatus("error");
-          return;
-        }
-
-        const json = (await res.json()) as HistorySummary;
-        setSummary(json);
-        setStatus("authed");
-      } catch {
-        if (cancelled) return;
-        setStatus("error");
-      }
-    }
-
-    load();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  const { status, summary } = useHistorySummary();
 
   if (status === "loading") {
     return (
