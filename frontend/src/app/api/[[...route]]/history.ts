@@ -1,8 +1,8 @@
 import "server-only";
 
-import type { D1Database } from "@cloudflare/workers-types";
-
 import { Hono } from "hono";
+
+import { getCloudflareContext } from "@opennextjs/cloudflare";
 
 import { getOptionalUserId, requireUserId } from "@/lib/auth";
 import { createDb } from "@/db/client";
@@ -52,38 +52,45 @@ export function recordAttemptForUser(userId: string, attempt: AttemptRecord) {
   inMemoryAttemptsByUser.set(userId, list);
 }
 
-function getOptionalDbFromBindings(bindings: unknown) {
-  const env = bindings as { DB?: D1Database } | null | undefined;
-  const db = env?.DB;
-  if (!db) return null;
-  return createDb(db);
+function getOptionalDb() {
+  try {
+    const { env } = getCloudflareContext();
+    const db = (env as Record<string, unknown>).DB;
+    if (!db) return null;
+    return createDb(db as import("@cloudflare/workers-types").D1Database);
+  } catch {
+    return null;
+  }
 }
 
-export async function recordAttemptIfLoggedIn(attempt: PersistedAttemptInput, bindings?: unknown) {
+export async function recordAttemptIfLoggedIn(attempt: PersistedAttemptInput) {
   const userId = await getOptionalUserId();
   if (!userId) return;
 
-  recordAttemptForUser(userId, { answeredAt: attempt.answeredAt, isCorrect: attempt.isCorrect });
+  const db = getOptionalDb();
 
-  const db = getOptionalDbFromBindings(bindings);
-  if (!db) return;
-
-  await db.insert(attemptsTable).values({
-    attemptId: crypto.randomUUID(),
-    sessionId: attempt.sessionId,
-    questionId: attempt.questionId,
-    userId,
-    selectedIndex: attempt.selectedIndex,
-    isCorrect: attempt.isCorrect,
-    explanation: attempt.explanation,
-    answeredAt: attempt.answeredAt,
-  });
+  // DB がある場合は DB のみに書き込む。
+  // DB がない場合（next dev 等）はインメモリ Map にフォールバック。
+  if (db) {
+    await db.insert(attemptsTable).values({
+      attemptId: crypto.randomUUID(),
+      sessionId: attempt.sessionId,
+      questionId: attempt.questionId,
+      userId,
+      selectedIndex: attempt.selectedIndex,
+      isCorrect: attempt.isCorrect,
+      explanation: attempt.explanation,
+      answeredAt: attempt.answeredAt,
+    });
+  } else {
+    recordAttemptForUser(userId, { answeredAt: attempt.answeredAt, isCorrect: attempt.isCorrect });
+  }
 }
 
 const app = new Hono().get("/summary", async (c) => {
   const userId = await requireUserId();
 
-  const db = getOptionalDbFromBindings(c.env);
+  const db = getOptionalDb();
   if (!db) {
     const attempts = inMemoryAttemptsByUser.get(userId) ?? [];
     return c.json(calculateHistorySummary(attempts));

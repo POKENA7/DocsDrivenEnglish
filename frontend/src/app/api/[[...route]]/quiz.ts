@@ -1,10 +1,10 @@
 import "server-only";
 
-import type { D1Database } from "@cloudflare/workers-types";
-
 import { Hono } from "hono";
 
 import { z } from "zod";
+
+import { getCloudflareContext } from "@opennextjs/cloudflare";
 
 import { createOpenAIParsedText } from "@/lib/openaiClient";
 
@@ -73,11 +73,15 @@ const PLANNED_QUESTION_COUNT = 5;
 const inMemorySessions = new Map<string, SessionRecord>();
 const inMemoryQuestions = new Map<string, QuestionRecord>();
 
-function getOptionalDbFromBindings(bindings: unknown) {
-  const env = bindings as { DB?: D1Database } | null | undefined;
-  const db = env?.DB;
-  if (!db) return null;
-  return createDb(db);
+function getOptionalDb() {
+  try {
+    const { env } = getCloudflareContext();
+    const db = (env as Record<string, unknown>).DB;
+    if (!db) return null;
+    return createDb(db as import("@cloudflare/workers-types").D1Database);
+  } catch {
+    return null;
+  }
 }
 
 async function persistSessionIfPossible(
@@ -258,10 +262,10 @@ async function generateQuizItemsFromText(
   }));
 }
 
-export async function startQuizSession(
-  input: { url: string; mode: Mode },
-  bindings?: unknown,
-): Promise<StartSessionResponse> {
+export async function startQuizSession(input: {
+  url: string;
+  mode: Mode;
+}): Promise<StartSessionResponse> {
   const extracted = await fetchAndExtractDocument(input.url);
   const plannedCount = PLANNED_QUESTION_COUNT;
   const text = stripUrlsFromText(getSentencesFromMarkdown(extracted.markdown).join("\n"));
@@ -313,7 +317,7 @@ export async function startQuizSession(
   inMemorySessions.set(sessionId, session);
   for (const q of questions) inMemoryQuestions.set(q.questionId, q);
 
-  const db = getOptionalDbFromBindings(bindings);
+  const db = getOptionalDb();
   await persistSessionIfPossible(db, session);
 
   return {
@@ -333,11 +337,12 @@ export async function startQuizSession(
   };
 }
 
-export async function submitQuizAnswer(
-  input: { sessionId: string; questionId: string; selectedIndex: number },
-  bindings?: unknown,
-): Promise<SubmitAnswerResponse> {
-  const db = getOptionalDbFromBindings(bindings);
+export async function submitQuizAnswer(input: {
+  sessionId: string;
+  questionId: string;
+  selectedIndex: number;
+}): Promise<SubmitAnswerResponse> {
+  const db = getOptionalDb();
   const q = await getQuestionIfPossible(db, input.questionId);
   if (!q || q.sessionId !== input.sessionId) {
     throw new ApiError("BAD_REQUEST", 400, "問題が見つかりませんでした");
@@ -350,17 +355,14 @@ export async function submitQuizAnswer(
     sourceQuoteText: q.sourceQuoteText,
   };
 
-  await recordAttemptIfLoggedIn(
-    {
-      sessionId: input.sessionId,
-      questionId: input.questionId,
-      selectedIndex: input.selectedIndex,
-      isCorrect: out.isCorrect,
-      explanation: out.explanation,
-      answeredAt: new Date(),
-    },
-    bindings,
-  );
+  await recordAttemptIfLoggedIn({
+    sessionId: input.sessionId,
+    questionId: input.questionId,
+    selectedIndex: input.selectedIndex,
+    isCorrect: out.isCorrect,
+    explanation: out.explanation,
+    answeredAt: new Date(),
+  });
 
   return out;
 }
@@ -385,7 +387,7 @@ const app = new Hono()
       throw new ApiError("BAD_REQUEST", 400, "選択肢が不正です");
     }
 
-    const out = await submitQuizAnswer({ sessionId, questionId, selectedIndex }, c.env);
+    const out = await submitQuizAnswer({ sessionId, questionId, selectedIndex });
     return c.json(out);
   })
   .post("/session", async (c) => {
@@ -402,7 +404,7 @@ const app = new Hono()
       throw new ApiError("BAD_REQUEST", 400, "URL が不正です");
     }
 
-    const out = await startQuizSession({ url, mode }, c.env);
+    const out = await startQuizSession({ url, mode });
     return c.json(out);
   });
 
