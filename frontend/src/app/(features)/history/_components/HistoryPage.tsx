@@ -1,31 +1,7 @@
-import Link from "next/link";
-
 import { getHistorySummaryQuery } from "../_api/query";
 
 export default async function HistoryPage() {
-  const { status, summary } = await getHistorySummaryQuery();
-
-  if (status === "unauthed") {
-    return (
-      <main className="container-page page">
-        <h1 className="heading-1">履歴</h1>
-
-        <section className="mt-6 card">
-          <p className="text-sm text-muted-foreground">
-            未ログインのため、学習履歴は永続化されません。
-          </p>
-          <div className="mt-5 flex items-center gap-3">
-            <Link className="btn btn-primary" href="/sign-in">
-              login
-            </Link>
-            <Link className="btn btn-ghost" href="/learn">
-              学習へ戻る
-            </Link>
-          </div>
-        </section>
-      </main>
-    );
-  }
+  const summary = await getHistorySummaryQuery();
 
   const correctRatePercent = Math.round(summary.correctRate * 100);
 

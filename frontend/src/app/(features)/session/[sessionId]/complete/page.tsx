@@ -12,7 +12,7 @@ type PageProps = {
 
 export default async function SessionComplete({ params }: PageProps) {
   const { sessionId } = await params;
-  const session = getSessionSnapshot(sessionId);
+  const session = await getSessionSnapshot(sessionId);
 
   return (
     <SessionCompletePage

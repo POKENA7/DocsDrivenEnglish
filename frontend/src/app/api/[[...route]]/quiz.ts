@@ -13,7 +13,7 @@ import { questions as questionsTable, studySessions } from "@/db/schema";
 import { eq } from "drizzle-orm";
 
 import { ApiError } from "./errors";
-import { recordAttemptIfLoggedIn } from "./history";
+import { recordAttempt } from "./history";
 
 type Mode = "word" | "reading";
 
@@ -56,9 +56,6 @@ const STRUCTURED_OUTPUTS_MODEL = "gpt-5-mini";
 
 const PLANNED_QUESTION_COUNT = 5;
 
-const inMemorySessions = new Map<string, SessionRecord>();
-const inMemoryQuestions = new Map<string, QuestionRecord>();
-
 function getOptionalDb() {
   try {
     const { env } = getCloudflareContext();
@@ -70,7 +67,7 @@ function getOptionalDb() {
   }
 }
 
-async function persistSessionIfPossible(
+async function persistSession(
   db: ReturnType<typeof createDb> | null,
   session: SessionRecord,
 ): Promise<void> {
@@ -103,12 +100,10 @@ async function persistSessionIfPossible(
   );
 }
 
-async function getQuestionIfPossible(
+async function getQuestion(
   db: ReturnType<typeof createDb> | null,
   questionId: string,
 ): Promise<QuestionRecord | null> {
-  const cached = inMemoryQuestions.get(questionId);
-  if (cached) return cached;
   if (!db) return null;
 
   const rows = await db
@@ -120,13 +115,11 @@ async function getQuestionIfPossible(
   const row = rows[0];
   if (!row) return null;
 
-  const choices = JSON.parse(row.choicesJson) as string[];
-
   return {
     questionId: row.questionId,
     sessionId: row.sessionId,
     prompt: row.prompt,
-    choices,
+    choices: JSON.parse(row.choicesJson) as string[],
     correctIndex: row.correctIndex,
     explanation: row.explanation,
   };
@@ -137,8 +130,41 @@ function assertMode(mode: unknown): Mode {
   throw new ApiError("BAD_REQUEST", 400, "mode が不正です");
 }
 
-export function getSessionSnapshot(sessionId: string): SessionRecord | null {
-  return inMemorySessions.get(sessionId) ?? null;
+export async function getSessionSnapshot(sessionId: string): Promise<SessionRecord | null> {
+  const db = getOptionalDb();
+  if (!db) return null;
+
+  const sessionRows = await db
+    .select()
+    .from(studySessions)
+    .where(eq(studySessions.sessionId, sessionId))
+    .limit(1);
+
+  const session = sessionRows[0];
+  if (!session) return null;
+
+  const questionRows = await db
+    .select()
+    .from(questionsTable)
+    .where(eq(questionsTable.sessionId, sessionId));
+
+  const questions: QuestionRecord[] = questionRows.map((q) => ({
+    questionId: q.questionId,
+    sessionId: q.sessionId,
+    prompt: q.prompt,
+    choices: JSON.parse(q.choicesJson) as string[],
+    correctIndex: q.correctIndex,
+    explanation: q.explanation,
+  }));
+
+  return {
+    sessionId: session.sessionId,
+    topic: session.topic,
+    mode: session.mode as Mode,
+    plannedCount: session.plannedCount,
+    actualCount: session.actualCount,
+    questions,
+  };
 }
 
 type GeneratedQuizItem = {
@@ -257,11 +283,8 @@ export async function startQuizSession(input: {
     questions,
   };
 
-  inMemorySessions.set(sessionId, session);
-  for (const q of questions) inMemoryQuestions.set(q.questionId, q);
-
   const db = getOptionalDb();
-  await persistSessionIfPossible(db, session);
+  await persistSession(db, session);
 
   return {
     sessionId,
@@ -282,7 +305,7 @@ export async function submitQuizAnswer(input: {
   selectedIndex: number;
 }): Promise<SubmitAnswerResponse> {
   const db = getOptionalDb();
-  const q = await getQuestionIfPossible(db, input.questionId);
+  const q = await getQuestion(db, input.questionId);
   if (!q || q.sessionId !== input.sessionId) {
     throw new ApiError("BAD_REQUEST", 400, "問題が見つかりませんでした");
   }
@@ -292,7 +315,7 @@ export async function submitQuizAnswer(input: {
     explanation: q.explanation,
   };
 
-  await recordAttemptIfLoggedIn({
+  await recordAttempt({
     sessionId: input.sessionId,
     questionId: input.questionId,
     selectedIndex: input.selectedIndex,

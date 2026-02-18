@@ -12,7 +12,7 @@ type PageProps = {
 
 export default async function SessionIdPage({ params }: PageProps) {
   const { sessionId } = await params;
-  const session = getSessionSnapshot(sessionId);
+  const session = await getSessionSnapshot(sessionId);
 
   if (!session) {
     return (

@@ -1,12 +1,40 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { apiApp } from "@/app/api/[[...route]]/app";
 
-vi.mock("@clerk/nextjs/server", () => {
-  return {
-    auth: () => ({ userId: null }),
-  };
-});
+// DB に永続化された question を保持するフェイクストア
+const questionStore = new Map<string, Record<string, unknown>>();
+
+vi.mock("@opennextjs/cloudflare", () => ({
+  getCloudflareContext: () => ({ env: { DB: {} } }),
+}));
+
+vi.mock("@/db/client", () => ({
+  createDb: () => ({
+    insert: () => ({
+      values: (data: unknown) => {
+        const rows = Array.isArray(data) ? data : [data];
+        for (const row of rows as Record<string, unknown>[]) {
+          if (typeof row.questionId === "string") {
+            questionStore.set(row.questionId, row);
+          }
+        }
+        return Promise.resolve();
+      },
+    }),
+    select: () => ({
+      from: () => ({
+        where: () => ({
+          limit: () => Promise.resolve([...questionStore.values()].slice(0, 1)),
+        }),
+      }),
+    }),
+  }),
+}));
+
+vi.mock("@clerk/nextjs/server", () => ({
+  auth: () => ({ userId: "test-user-id" }),
+}));
 
 vi.mock("@/lib/openaiClient", () => {
   return {
@@ -46,6 +74,10 @@ vi.mock("@/lib/openaiClient", () => {
 });
 
 describe("POST /api/quiz/answer", () => {
+  beforeEach(() => {
+    questionStore.clear();
+  });
+
   it("scores answer", async () => {
     const start = await apiApp.request("http://localhost/api/quiz/session", {
       method: "POST",

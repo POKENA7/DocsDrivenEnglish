@@ -5,8 +5,8 @@ import { getCloudflareContext } from "@opennextjs/cloudflare";
 
 import { createDb } from "@/db/client";
 import { attempts as attemptsTable } from "@/db/schema";
-import { getOptionalUserId } from "@/lib/auth";
-import { calculateHistorySummary, inMemoryAttemptsByUser } from "@/app/api/[[...route]]/history";
+import { requireUserId } from "@/lib/auth";
+import { calculateHistorySummary } from "@/app/api/[[...route]]/history";
 
 export type HistorySummary = {
   attemptCount: number;
@@ -14,15 +14,8 @@ export type HistorySummary = {
   studyDays: number;
 };
 
-export type HistorySummaryResult =
-  | { status: "unauthed"; summary: null }
-  | { status: "authed"; summary: HistorySummary };
-
-export async function getHistorySummaryQuery(): Promise<HistorySummaryResult> {
-  const userId = await getOptionalUserId();
-  if (!userId) {
-    return { status: "unauthed", summary: null };
-  }
+export async function getHistorySummaryQuery(): Promise<HistorySummary> {
+  const userId = await requireUserId();
 
   let db: ReturnType<typeof createDb> | null = null;
   try {
@@ -34,8 +27,7 @@ export async function getHistorySummaryQuery(): Promise<HistorySummaryResult> {
   }
 
   if (!db) {
-    const attempts = inMemoryAttemptsByUser.get(userId) ?? [];
-    return { status: "authed", summary: calculateHistorySummary(attempts) };
+    return calculateHistorySummary([]);
   }
 
   const rows = await db
@@ -43,5 +35,5 @@ export async function getHistorySummaryQuery(): Promise<HistorySummaryResult> {
     .from(attemptsTable)
     .where(eq(attemptsTable.userId, userId));
 
-  return { status: "authed", summary: calculateHistorySummary(rows) };
+  return calculateHistorySummary(rows);
 }

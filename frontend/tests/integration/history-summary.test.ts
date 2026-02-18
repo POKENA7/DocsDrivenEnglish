@@ -14,7 +14,6 @@ vi.mock("@/lib/auth", () => {
   }
 
   return {
-    getOptionalUserId: () => getTestUserId(),
     requireUserId: () => {
       const userId = getTestUserId();
       if (!userId) {
