@@ -3,9 +3,10 @@
 import { redirect } from "next/navigation";
 
 import type { StartSessionResponse, SubmitAnswerResponse } from "@/app/api/[[...route]]/quiz";
+import { submitQuizAnswer } from "@/app/api/[[...route]]/quiz";
 
 import type { ContinueSessionInput, SubmitAnswerInput } from "./query";
-import { continueSessionQuery, submitAnswerQuery } from "./query";
+import { continueSessionQuery } from "./query";
 
 export async function continueSessionAction(
   input: ContinueSessionInput,
@@ -16,7 +17,7 @@ export async function continueSessionAction(
 export async function submitQuizAnswerAction(
   input: SubmitAnswerInput,
 ): Promise<SubmitAnswerResponse> {
-  return submitAnswerQuery(input);
+  return submitQuizAnswer(input);
 }
 
 export async function continueSessionFormAction(formData: FormData): Promise<void> {
