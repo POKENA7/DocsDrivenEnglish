@@ -3,11 +3,7 @@ import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 export const studySessions = sqliteTable("study_sessions", {
   sessionId: text("session_id").primaryKey(),
   userId: text("user_id"),
-  inputUrl: text("input_url").notNull(),
-  sourceUrl: text("source_url").notNull(),
-  sourceQuoteText: text("source_quote_text").notNull(),
-  title: text("title"),
-  fetchedAt: integer("fetched_at", { mode: "timestamp_ms" }).notNull(),
+  topic: text("topic").notNull(),
   mode: text("mode").notNull(),
   plannedCount: integer("planned_count").notNull(),
   actualCount: integer("actual_count").notNull(),
@@ -23,8 +19,6 @@ export const questions = sqliteTable("questions", {
   choicesJson: text("choices_json").notNull(),
   correctIndex: integer("correct_index").notNull(),
   explanation: text("explanation").notNull(),
-  sourceUrl: text("source_url").notNull(),
-  sourceQuoteText: text("source_quote_text").notNull(),
   createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
 });
 

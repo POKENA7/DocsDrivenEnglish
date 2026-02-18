@@ -47,20 +47,10 @@ vi.mock("@/lib/openaiClient", () => {
 
 describe("POST /api/quiz/answer", () => {
   it("scores answer", async () => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn(async () => {
-        return new Response(
-          "<!doctype html><html><body><article><p>Some content for quiz.</p></article></body></html>",
-          { headers: { "content-type": "text/html" } },
-        );
-      }),
-    );
-
     const start = await apiApp.request("http://localhost/api/quiz/session", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ url: "https://example.com", mode: "word" }),
+      body: JSON.stringify({ topic: "React Hooks", mode: "word" }),
     });
     expect(start.status).toBe(200);
 
@@ -82,7 +72,5 @@ describe("POST /api/quiz/answer", () => {
     const json = await res.json();
     expect(typeof json.isCorrect).toBe("boolean");
     expect(typeof json.explanation).toBe("string");
-    expect(json.sourceUrl).toBeTruthy();
-    expect(json.sourceQuoteText).toBeTruthy();
   });
 });

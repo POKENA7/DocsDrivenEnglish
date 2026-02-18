@@ -29,39 +29,34 @@ vi.mock("@/lib/openaiClient", () => {
 });
 
 describe("POST /api/quiz/session errors", () => {
-  it("returns 502 when fetch fails", async () => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn(async () => {
-        return new Response("nope", { status: 500 });
-      }),
-    );
-
+  it("returns 400 when topic is empty", async () => {
     const res = await apiApp.request("http://localhost/api/quiz/session", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ url: "https://example.com", mode: "word" }),
+      body: JSON.stringify({ topic: "", mode: "word" }),
     });
 
-    expect(res.status).toBe(502);
+    expect(res.status).toBe(400);
   });
 
-  it("returns 502 when extraction fails", async () => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn(async () => {
-        return new Response("<!doctype html><html><body></body></html>", {
-          headers: { "content-type": "text/html" },
-        });
-      }),
-    );
-
+  it("returns 400 when topic is whitespace only", async () => {
     const res = await apiApp.request("http://localhost/api/quiz/session", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ url: "https://example.com", mode: "word" }),
+      body: JSON.stringify({ topic: "   ", mode: "word" }),
     });
 
-    expect(res.status).toBe(502);
+    expect(res.status).toBe(400);
+  });
+
+  it("returns 500 when LLM returns no items", async () => {
+    const res = await apiApp.request("http://localhost/api/quiz/session", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ topic: "React Hooks", mode: "word" }),
+    });
+
+    // items: [] のモックなので 500
+    expect(res.status).toBe(500);
   });
 });

@@ -1,8 +1,8 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "32161c4f-d015-4544-9d0e-7b731783f13d",
-  "prevId": "00000000-0000-0000-0000-000000000000",
+  "id": "37b024e0-bc94-494d-8eb1-30e814da9594",
+  "prevId": "32161c4f-d015-4544-9d0e-7b731783f13d",
   "tables": {
     "attempts": {
       "name": "attempts",
@@ -122,20 +122,6 @@
           "notNull": true,
           "autoincrement": false
         },
-        "source_url": {
-          "name": "source_url",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "source_quote_text": {
-          "name": "source_quote_text",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
         "created_at": {
           "name": "created_at",
           "type": "integer",
@@ -167,37 +153,9 @@
           "notNull": false,
           "autoincrement": false
         },
-        "input_url": {
-          "name": "input_url",
+        "topic": {
+          "name": "topic",
           "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "source_url": {
-          "name": "source_url",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "source_quote_text": {
-          "name": "source_quote_text",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "title": {
-          "name": "title",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "fetched_at": {
-          "name": "fetched_at",
-          "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false

@@ -57,9 +57,9 @@ npm run dev
 
 - http://localhost:3000 を開く
 - 手動チェックの流れ（最小）:
-	- `/learn` で公開ドキュメントURLを入力し、mode（word/reading）を選んで学習開始
-	- 問題を回答して「正誤 + explanation + 出典」が表示される
-	- `/history` を開き、未ログインなら login CTA、ログイン済みなら集計が表示される
+  - `/learn` で公開ドキュメントURLを入力し、mode（word/reading）を選んで学習開始
+  - 問題を回答して「正誤 + explanation + 出典」が表示される
+  - `/history` を開き、未ログインなら login CTA、ログイン済みなら集計が表示される
 
 ### 2) Production-like（Cloudflare Workers / OpenNext + Wrangler）
 

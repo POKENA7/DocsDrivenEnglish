@@ -7,17 +7,13 @@ export type SessionSnapshot = {
   sessionId: string;
   plannedCount: number;
   actualCount: number;
-  sourceUrl: string;
-  sourceQuoteText: string;
-  title: string | null;
+  topic: string;
   questions: Array<{
     questionId: string;
     prompt: string;
     choices: string[];
     correctIndex: number;
     explanation: string;
-    sourceUrl: string;
-    sourceQuoteText: string;
   }>;
 };
 
@@ -32,8 +28,6 @@ export function useQuizSession(session: SessionSnapshot) {
   const [result, setResult] = useState<null | {
     isCorrect: boolean;
     explanation: string;
-    sourceUrl: string;
-    sourceQuoteText: string;
   }>(null);
 
   const current = useMemo(() => session.questions[index], [index, session.questions]);
@@ -57,8 +51,6 @@ export function useQuizSession(session: SessionSnapshot) {
       setResult({
         isCorrect: false,
         explanation: message,
-        sourceUrl: session.sourceUrl,
-        sourceQuoteText: session.sourceQuoteText,
       });
     }
   }

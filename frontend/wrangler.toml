@@ -8,6 +8,9 @@ compatibility_flags = ["nodejs_compat"]
 # Node-only environment patching that can fail under Workers bundling.
 NEXT_RUNTIME = "edge"
 
+# Clerk (Public key / safe to expose)
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY = "pk_test_YnJhdmUtbGFtYi0xOC5jbGVyay5hY2NvdW50cy5kZXYk"
+
 [assets]
 directory = ".open-next/assets"
 binding = "ASSETS"
@@ -17,6 +20,13 @@ binding = "DB"
 database_name = "docs-driven-english"
 # NOTE: Wrangler requires database_id even for local operations.
 # Replace this placeholder with the real ID after running: `wrangler d1 create docs-driven-english`
-database_id = "00000000-0000-0000-0000-000000000000"
+database_id = "9c3b3cb6-1ecb-4fd4-ab00-1d580933c4af"
 migrations_dir = "src/db/migrations"
 # database_id は `wrangler d1 create` 後に設定する
+
+[observability]
+[observability.logs]
+enabled = true
+head_sampling_rate = 1
+invocation_logs = true
+persist = true

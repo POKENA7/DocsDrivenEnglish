@@ -9,26 +9,27 @@ export default function LearnPage() {
     <main className="container-page page">
       <div className="reveal">
         <h1 className="heading-1">学習を開始</h1>
-        <p className="mt-2 lede">公開ドキュメントのURLを貼り付けて、クイズを生成します。</p>
+        <p className="mt-2 lede">学習したい技術要素を入力して、クイズを生成します。</p>
       </div>
 
       <form onSubmit={onSubmit} className="mt-6 space-y-6">
         <section className="card reveal" style={{ animationDelay: "80ms" }}>
           <div className="space-y-2">
-            <label className="text-sm font-medium" htmlFor="url">
-              URL
+            <label className="text-sm font-medium" htmlFor="topic">
+              学習したい技術・トピック
             </label>
             <input
-              id="url"
-              name="url"
-              type="url"
+              id="topic"
+              name="topic"
+              type="text"
               required
-              placeholder="https://..."
+              placeholder="React Hooks"
               className="input"
-              inputMode="url"
-              autoComplete="url"
+              autoComplete="off"
             />
-            <p className="text-xs text-muted-foreground">例: ドキュメントの単一ページ（公開URL）</p>
+            <p className="text-xs text-muted-foreground">
+              例: useEffect, Android Jetpack Compose, Kubernetes Pod
+            </p>
           </div>
 
           <fieldset className="mt-6">

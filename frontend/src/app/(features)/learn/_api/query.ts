@@ -4,7 +4,7 @@ import { honoRpcClient } from "@/lib/honoRpcClient";
 import { rpcJson } from "@/lib/swr";
 
 export type StartSessionInput = {
-  url: string;
+  topic: string;
   mode: "word" | "reading";
 };
 

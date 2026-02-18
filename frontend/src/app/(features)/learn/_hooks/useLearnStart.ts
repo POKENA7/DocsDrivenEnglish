@@ -10,7 +10,7 @@ export function useLearnStart() {
 
   const mutation = useSWRMutation(
     "quiz/session",
-    async (_key, { arg }: { arg: { url: string; mode: "word" | "reading" } }) => {
+    async (_key, { arg }: { arg: { topic: string; mode: "word" | "reading" } }) => {
       return startSessionAction(arg);
     },
   );
@@ -19,7 +19,7 @@ export function useLearnStart() {
     e.preventDefault();
 
     const formData = new FormData(e.currentTarget);
-    const url = String(formData.get("url") ?? "");
+    const topic = String(formData.get("topic") ?? "");
     const mode = String(formData.get("mode") ?? "word");
 
     if (mode !== "word" && mode !== "reading") {
@@ -30,7 +30,7 @@ export function useLearnStart() {
     setError(null);
 
     try {
-      const session = await mutation.trigger({ url, mode });
+      const session = await mutation.trigger({ topic, mode });
       router.push(`/session/${session.sessionId}`);
     } catch (e) {
       const message = e instanceof Error ? e.message : "エラーが発生しました";

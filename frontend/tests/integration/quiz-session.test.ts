@@ -40,31 +40,21 @@ vi.mock("@/lib/openaiClient", () => {
 });
 
 describe("POST /api/quiz/session", () => {
-  it("returns 400 for invalid url", async () => {
+  it("returns 400 for empty topic", async () => {
     const res = await apiApp.request("http://localhost/api/quiz/session", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ url: "", mode: "word" }),
+      body: JSON.stringify({ topic: "", mode: "word" }),
     });
 
     expect(res.status).toBe(400);
   });
 
   it("returns 200 for valid input", async () => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn(async () => {
-        return new Response(
-          "<!doctype html><html><body><article><p>Some content for quiz.</p></article></body></html>",
-          { headers: { "content-type": "text/html" } },
-        );
-      }),
-    );
-
     const res = await apiApp.request("http://localhost/api/quiz/session", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ url: "https://example.com", mode: "word" }),
+      body: JSON.stringify({ topic: "React Hooks", mode: "word" }),
     });
 
     expect(res.status).toBe(200);
@@ -72,6 +62,7 @@ describe("POST /api/quiz/session", () => {
     const json = await res.json();
     expect(json.sessionId).toBeTruthy();
     expect(json.plannedCount).toBe(5);
+    expect(json.topic).toBe("React Hooks");
     expect(Array.isArray(json.questions)).toBe(true);
   });
 });

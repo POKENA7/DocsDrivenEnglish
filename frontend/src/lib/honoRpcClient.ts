@@ -5,7 +5,7 @@ import type { AppType } from "@/app/api/[[...route]]/app";
 export type HonoRpcClient = {
   quiz: {
     session: {
-      $post: (args: { json: { url: string; mode: "word" | "reading" } }) => Promise<Response>;
+      $post: (args: { json: { topic: string; mode: "word" | "reading" } }) => Promise<Response>;
     };
     answer: {
       $post: (args: {

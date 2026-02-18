@@ -9,7 +9,7 @@ import { continueSessionAction } from "../_api/actions";
 
 export default function SessionCompletePage(props: {
   sessionId: string;
-  inputUrl: string | null;
+  topic: string | null;
   mode: "word" | "reading" | null;
 }) {
   const router = useRouter();
@@ -17,7 +17,7 @@ export default function SessionCompletePage(props: {
 
   const mutation = useSWRMutation(
     "quiz/session",
-    async (_key, { arg }: { arg: { url: string; mode: "word" | "reading" } }) => {
+    async (_key, { arg }: { arg: { topic: string; mode: "word" | "reading" } }) => {
       return continueSessionAction(arg);
     },
   );
@@ -25,11 +25,11 @@ export default function SessionCompletePage(props: {
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
 
-    if (!props.inputUrl || !props.mode) return;
+    if (!props.topic || !props.mode) return;
 
     setError(null);
     try {
-      const session = await mutation.trigger({ url: props.inputUrl, mode: props.mode });
+      const session = await mutation.trigger({ topic: props.topic!, mode: props.mode! });
       router.push(`/session/${session.sessionId}`);
     } catch (e) {
       const message = e instanceof Error ? e.message : "エラーが発生しました";
@@ -45,9 +45,9 @@ export default function SessionCompletePage(props: {
       </div>
 
       <section className="mt-6 card reveal" style={{ animationDelay: "80ms" }}>
-        {props.inputUrl && props.mode ? (
+        {props.topic && props.mode ? (
           <form onSubmit={onSubmit} className="space-y-4">
-            <input type="hidden" name="url" value={props.inputUrl} />
+            <input type="hidden" name="topic" value={props.topic} />
             <input type="hidden" name="mode" value={props.mode} />
 
             {error ? <p className="text-sm text-destructive">{error}</p> : null}
@@ -57,14 +57,14 @@ export default function SessionCompletePage(props: {
                 {mutation.isMutating ? "開始中..." : "続行（次の5問）"}
               </button>
               <Link href="/learn" className="btn btn-ghost">
-                別のURLで学習
+                別のトピックで学習
               </Link>
             </div>
           </form>
         ) : (
           <div className="space-y-3">
             <p className="text-sm text-muted-foreground">
-              URL または Mode が見つかりませんでした。
+              トピックまたは Mode が見つかりませんでした。
             </p>
             <Link className="btn btn-primary w-fit" href="/learn">
               /learn へ戻る

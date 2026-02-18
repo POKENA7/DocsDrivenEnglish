@@ -17,7 +17,7 @@ export default async function SessionComplete({ params }: PageProps) {
   return (
     <SessionCompletePage
       sessionId={sessionId}
-      inputUrl={session?.inputUrl ?? null}
+      topic={session?.topic ?? null}
       mode={session?.mode ?? null}
     />
   );

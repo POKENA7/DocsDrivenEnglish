@@ -2,7 +2,6 @@
 
 import { useQuizSession, type SessionSnapshot } from "../_hooks/useQuizSession";
 
-import SourceAttribution from "./SourceAttribution";
 import SessionProgress from "./SessionProgress";
 
 export default function SessionPage({ session }: { session: SessionSnapshot }) {
@@ -30,7 +29,7 @@ export default function SessionPage({ session }: { session: SessionSnapshot }) {
             </p>
           </div>
 
-          <p className="text-xs text-muted-foreground">{session.title ?? ""}</p>
+          <p className="text-xs text-muted-foreground">{session.topic}</p>
         </div>
 
         <SessionProgress attemptCount={attemptCount} correctCount={correctCount} />
@@ -117,10 +116,6 @@ export default function SessionPage({ session }: { session: SessionSnapshot }) {
             <p className="mt-3 whitespace-pre-line text-sm leading-relaxed text-muted-foreground">
               {result.explanation}
             </p>
-            <SourceAttribution
-              sourceUrl={result.sourceUrl}
-              sourceQuoteText={result.sourceQuoteText}
-            />
           </div>
         ) : null}
       </section>
