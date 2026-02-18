@@ -61,8 +61,21 @@ describe("POST /api/quiz/session", () => {
 
     const json = await res.json();
     expect(json.sessionId).toBeTruthy();
-    expect(json.plannedCount).toBe(5);
+    expect(json.plannedCount).toBe(10);
     expect(json.topic).toBe("React Hooks");
     expect(Array.isArray(json.questions)).toBe(true);
+  });
+
+  it("accepts custom questionCount", async () => {
+    const res = await apiApp.request("http://localhost/api/quiz/session", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ topic: "React Hooks", mode: "word", questionCount: 3 }),
+    });
+
+    expect(res.status).toBe(200);
+
+    const json = await res.json();
+    expect(json.plannedCount).toBe(3);
   });
 });
