@@ -1,31 +1,9 @@
-"use client";
-
 import Link from "next/link";
 
-import { useHistorySummary } from "../_hooks/useHistorySummary";
+import { getHistorySummaryQuery } from "../_api/query";
 
-export default function HistoryPage() {
-  const { status, summary } = useHistorySummary();
-
-  if (status === "loading") {
-    return (
-      <main className="container-page page">
-        <h1 className="heading-1">履歴</h1>
-        <p className="mt-3 lede">読み込み中...</p>
-      </main>
-    );
-  }
-
-  if (status === "error") {
-    return (
-      <main className="container-page page">
-        <h1 className="heading-1">履歴</h1>
-        <section className="mt-6 card">
-          <p className="text-sm text-muted-foreground">取得に失敗しました。</p>
-        </section>
-      </main>
-    );
-  }
+export default async function HistoryPage() {
+  const { status, summary } = await getHistorySummaryQuery();
 
   if (status === "unauthed") {
     return (
@@ -49,7 +27,7 @@ export default function HistoryPage() {
     );
   }
 
-  const correctRatePercent = summary ? Math.round(summary.correctRate * 100) : 0;
+  const correctRatePercent = Math.round(summary.correctRate * 100);
 
   return (
     <main className="container-page page">
@@ -61,7 +39,7 @@ export default function HistoryPage() {
       <section className="mt-6 grid gap-3 sm:grid-cols-3">
         <div className="card-compact reveal" style={{ animationDelay: "80ms" }}>
           <p className="text-xs text-muted-foreground">問題数</p>
-          <p className="mt-1 text-lg font-semibold tracking-tight">{summary?.attemptCount ?? 0}</p>
+          <p className="mt-1 text-lg font-semibold tracking-tight">{summary.attemptCount}</p>
         </div>
         <div className="card-compact reveal" style={{ animationDelay: "140ms" }}>
           <p className="text-xs text-muted-foreground">正答率</p>
@@ -69,7 +47,7 @@ export default function HistoryPage() {
         </div>
         <div className="card-compact reveal" style={{ animationDelay: "200ms" }}>
           <p className="text-xs text-muted-foreground">継続学習日数</p>
-          <p className="mt-1 text-lg font-semibold tracking-tight">{summary?.studyDays ?? 0}</p>
+          <p className="mt-1 text-lg font-semibold tracking-tight">{summary.studyDays}</p>
         </div>
       </section>
     </main>

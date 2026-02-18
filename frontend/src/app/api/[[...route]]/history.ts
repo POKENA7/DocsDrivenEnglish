@@ -23,7 +23,7 @@ type PersistedAttemptInput = {
   answeredAt: Date;
 };
 
-const inMemoryAttemptsByUser = new Map<string, AttemptRecord[]>();
+export const inMemoryAttemptsByUser = new Map<string, AttemptRecord[]>();
 
 export function calculateHistorySummary(attempts: AttemptRecord[]) {
   const attemptCount = attempts.length;
