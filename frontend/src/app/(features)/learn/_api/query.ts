@@ -6,6 +6,8 @@ import { rpcJson } from "@/lib/swr";
 export type StartSessionInput = {
   topic: string;
   mode: "word" | "reading";
+  questionCount?: number;
+  reviewQuestionCount?: number;
 };
 
 export async function startSessionQuery(input: StartSessionInput): Promise<StartSessionResponse> {

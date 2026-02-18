@@ -52,9 +52,25 @@ export default function LearnPage() {
             </div>
           </fieldset>
 
+          <div className="mt-6 space-y-2">
+            <label className="text-sm font-medium" htmlFor="questionCount">
+              出題問題数
+            </label>
+            <input
+              id="questionCount"
+              name="questionCount"
+              type="number"
+              min={1}
+              max={20}
+              defaultValue={10}
+              className="input w-28"
+            />
+            <p className="text-xs text-muted-foreground">1〜20問の範囲で設定できます</p>
+          </div>
+
           <div className="mt-6 flex items-center gap-3">
             <SubmitButton />
-            <p className="text-xs text-muted-foreground">最大5問のクイズが始まります</p>
+            <p className="text-xs text-muted-foreground">設定した問題数のクイズが始まります</p>
           </div>
         </section>
       </form>

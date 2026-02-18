@@ -54,8 +54,6 @@ type SessionRecord = {
 
 const STRUCTURED_OUTPUTS_MODEL = "gpt-5-mini";
 
-const PLANNED_QUESTION_COUNT = 5;
-
 function getOptionalDb() {
   try {
     const { env } = getCloudflareContext();
@@ -174,11 +172,15 @@ type GeneratedQuizItem = {
   explanation: string;
 };
 
-async function generateQuizItemsFromTopic(topic: string, mode: Mode): Promise<GeneratedQuizItem[]> {
+async function generateQuizItemsFromTopic(
+  topic: string,
+  mode: Mode,
+  questionCount: number,
+): Promise<GeneratedQuizItem[]> {
   const trimmedTopic = topic.trim();
   if (!trimmedTopic) return [];
 
-  console.log("[quiz] generating quiz items, topic = ", { topic: trimmedTopic });
+  console.log("[quiz] generating quiz items, topic = ", { topic: trimmedTopic, questionCount });
 
   const QuizItemsSchema = z.object({
     items: z
@@ -193,7 +195,7 @@ async function generateQuizItemsFromTopic(topic: string, mode: Mode): Promise<Ge
         }),
       )
       .min(1)
-      .max(PLANNED_QUESTION_COUNT),
+      .max(questionCount),
   });
 
   const base =
@@ -202,7 +204,7 @@ async function generateQuizItemsFromTopic(topic: string, mode: Mode): Promise<Ge
     "扱う文章は技術ドキュメント（APIドキュメント/仕様/README/設計書など）に出てくる表現を想定しています。\n" +
     `技術トピック: ${trimmedTopic}\n` +
     "共通要件（厳守）:\n" +
-    "- 必ず5問作ること。\n" +
+    `- 必ず${questionCount}問作ること。\n` +
     "- prompt(問題文), choices(選択肢), explanation(解説)はすべて日本語。\n" +
     "- promptは以下のセクションとし、セクション間は改行すること。\n" +
     "  1) 問題文（日本語）\n" +
@@ -249,16 +251,18 @@ async function generateQuizItemsFromTopic(topic: string, mode: Mode): Promise<Ge
 export async function startQuizSession(input: {
   topic: string;
   mode: Mode;
+  questionCount?: number;
+  reviewQuestionCount?: number;
 }): Promise<StartSessionResponse> {
   const topic = input.topic.trim();
   if (!topic) {
     throw new ApiError("BAD_REQUEST", 400, "技術トピックを入力してください");
   }
 
-  const plannedCount = PLANNED_QUESTION_COUNT;
+  const plannedCount = input.questionCount ?? 10;
   const sessionId = crypto.randomUUID();
 
-  const generated = await generateQuizItemsFromTopic(topic, input.mode);
+  const generated = await generateQuizItemsFromTopic(topic, input.mode, plannedCount);
 
   const actualCount = generated.length;
   if (actualCount <= 0) {
@@ -364,7 +368,17 @@ const app = new Hono()
       throw new ApiError("BAD_REQUEST", 400, "トピックが不正です");
     }
 
-    const out = await startQuizSession({ topic, mode });
+    const bodySchema = z.object({
+      topic: z.string().min(1),
+      mode: z.enum(["word", "reading"]),
+      questionCount: z.number().int().min(1).max(20).optional().default(10),
+      reviewQuestionCount: z.number().int().min(0).optional().default(0),
+    });
+    const parsed = bodySchema.safeParse(record);
+    const questionCount = parsed.success ? parsed.data.questionCount : 10;
+    const reviewQuestionCount = parsed.success ? parsed.data.reviewQuestionCount : 0;
+
+    const out = await startQuizSession({ topic, mode, questionCount, reviewQuestionCount });
     return c.json(out);
   });
 
