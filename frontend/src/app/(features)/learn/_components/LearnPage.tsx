@@ -1,10 +1,8 @@
-"use client";
+import { startSessionFormAction } from "../_api/actions";
 
-import { useLearnStart } from "../_hooks/useLearnStart";
+import SubmitButton from "./SubmitButton";
 
 export default function LearnPage() {
-  const { onSubmit, pending, error } = useLearnStart();
-
   return (
     <main className="container-page page">
       <div className="reveal">
@@ -12,7 +10,7 @@ export default function LearnPage() {
         <p className="mt-2 lede">学習したい技術要素を入力して、クイズを生成します。</p>
       </div>
 
-      <form onSubmit={onSubmit} className="mt-6 space-y-6">
+      <form action={startSessionFormAction} className="mt-6 space-y-6">
         <section className="card reveal" style={{ animationDelay: "80ms" }}>
           <div className="space-y-2">
             <label className="text-sm font-medium" htmlFor="topic">
@@ -54,12 +52,8 @@ export default function LearnPage() {
             </div>
           </fieldset>
 
-          {error ? <p className="mt-5 text-sm text-destructive">{error}</p> : null}
-
           <div className="mt-6 flex items-center gap-3">
-            <button type="submit" disabled={pending} className="btn btn-primary">
-              {pending ? "開始中..." : "学習開始"}
-            </button>
+            <SubmitButton />
             <p className="text-xs text-muted-foreground">最大5問のクイズが始まります</p>
           </div>
         </section>
