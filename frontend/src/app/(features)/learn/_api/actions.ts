@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 
 import type { StartSessionResponse } from "@/app/api/[[...route]]/quiz";
+import { startQuizSession } from "@/app/api/[[...route]]/quiz";
 
 import type { StartSessionInput } from "./query";
 import { startSessionQuery } from "./query";
@@ -23,6 +24,10 @@ export async function startSessionFormAction(formData: FormData): Promise<void> 
   if (!topic) return;
   if (mode !== "word" && mode !== "reading") return;
 
-  const session = await startSessionQuery({ topic, mode, questionCount });
+  const session = await startQuizSession({
+    topic,
+    mode: mode as "word" | "reading",
+    questionCount,
+  });
   redirect(`/session/${session.sessionId}`);
 }
