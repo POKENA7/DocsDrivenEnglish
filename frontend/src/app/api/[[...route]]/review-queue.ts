@@ -10,7 +10,7 @@ import { getCloudflareContext } from "@opennextjs/cloudflare";
 
 import { createDb } from "@/db/client";
 import { questions as questionsTable, reviewQueue } from "@/db/schema";
-import { and, eq, lte } from "drizzle-orm";
+import { and, count, eq, lte } from "drizzle-orm";
 
 import { ApiError } from "./errors";
 
@@ -88,12 +88,12 @@ export const getDueReviewCount = cache(async (userId: string): Promise<number> =
   if (!db) return 0;
 
   const nowMs = Date.now();
-  const rows = await db
-    .select({ id: reviewQueue.id })
+  const [result] = await db
+    .select({ count: count() })
     .from(reviewQueue)
     .where(and(eq(reviewQueue.userId, userId), lte(reviewQueue.nextReviewAt, nowMs)));
 
-  return rows.length;
+  return result?.count ?? 0;
 });
 
 export type ReviewQueueDisplayItem = {

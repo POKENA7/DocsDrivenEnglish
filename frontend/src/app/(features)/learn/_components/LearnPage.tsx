@@ -34,7 +34,8 @@ export default function LearnPage({ dueCount }: { dueCount: number }) {
           role="status"
           style={{ animationDelay: "40ms" }}
         >
-          📚 復習問題が {dueCount} 件あります — 今日の学習に自動で含まれます
+          <span aria-hidden="true">📚</span> 復習問題が {dueCount} 件あります —
+          今日の学習に自動で含まれます
         </div>
       )}
 
