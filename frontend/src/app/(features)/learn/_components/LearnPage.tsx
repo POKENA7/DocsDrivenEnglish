@@ -6,7 +6,7 @@ import { startSessionFormAction } from "../_api/actions";
 
 import SubmitButton from "./SubmitButton";
 
-export default function LearnPage() {
+export default function LearnPage({ dueCount }: { dueCount: number }) {
   const [questionCount, setQuestionCount] = useState(10);
   const [reviewQuestionCount, setReviewQuestionCount] = useState(2);
 
@@ -27,6 +27,16 @@ export default function LearnPage() {
         <h1 className="heading-1">学習を開始</h1>
         <p className="mt-2 lede">学習したい技術要素を入力して、クイズを生成します。</p>
       </div>
+
+      {dueCount > 0 && (
+        <div
+          className="reveal mt-4 rounded-lg border border-primary/30 bg-primary/5 px-4 py-3 text-sm"
+          role="status"
+          style={{ animationDelay: "40ms" }}
+        >
+          📚 復習問題が {dueCount} 件あります — 今日の学習に自動で含まれます
+        </div>
+      )}
 
       <form action={startSessionFormAction} className="mt-6 space-y-6">
         <section className="card reveal" style={{ animationDelay: "80ms" }}>

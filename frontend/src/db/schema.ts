@@ -19,6 +19,8 @@ export const questions = sqliteTable("questions", {
   choicesJson: text("choices_json").notNull(),
   correctIndex: integer("correct_index").notNull(),
   explanation: text("explanation").notNull(),
+  // 復習問題として複製された場合の複製元 questionId（通常問題は null）
+  sourceQuestionId: text("source_question_id"),
   createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
 });
 

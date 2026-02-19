@@ -12,7 +12,7 @@ import { auth } from "@clerk/nextjs/server";
 
 import { createDb } from "@/db/client";
 import { questions as questionsTable, reviewQueue, studySessions } from "@/db/schema";
-import { and, eq, lte } from "drizzle-orm";
+import { and, eq, lte, sql } from "drizzle-orm";
 
 import { ApiError } from "./errors";
 import { recordAttempt } from "./history";
@@ -34,6 +34,9 @@ export type StartSessionResponse = {
 export type SubmitAnswerResponse = {
   isCorrect: boolean;
   explanation: string;
+  // 不正解時: 復習キューへの自動登録を通知 / 正解時(復習問題): 次回出題日時(ms)
+  isReviewRegistered?: boolean;
+  reviewNextAt?: number;
 };
 
 type QuestionRecord = {
@@ -43,6 +46,8 @@ type QuestionRecord = {
   choices: string[];
   correctIndex: number;
   explanation: string;
+  // 復習問題の複製元 questionId（通常問題は undefined）
+  sourceQuestionId?: string;
 };
 
 type SessionRecord = {
@@ -95,6 +100,7 @@ async function persistSession(
       choicesJson: JSON.stringify(q.choices),
       correctIndex: q.correctIndex,
       explanation: q.explanation,
+      sourceQuestionId: q.sourceQuestionId ?? null,
       createdAt: now,
     })),
   );
@@ -122,6 +128,7 @@ async function getQuestion(
     choices: JSON.parse(row.choicesJson) as string[],
     correctIndex: row.correctIndex,
     explanation: row.explanation,
+    sourceQuestionId: row.sourceQuestionId ?? undefined,
   };
 }
 
@@ -285,6 +292,7 @@ export async function startQuizSession(input: {
       .limit(reviewQuestionCountRequested);
 
     // 復習問題は新しい sessionId・questionId で新規セッションに紐付ける
+    // sourceQuestionId に元の questionId を記録し、回答時に review_queue を正しく更新できるようにする
     reviewQuestions = dueRows.map((row) => ({
       questionId: crypto.randomUUID(),
       sessionId,
@@ -292,6 +300,7 @@ export async function startQuizSession(input: {
       choices: JSON.parse(row.choicesJson) as string[],
       correctIndex: row.correctIndex,
       explanation: row.explanation,
+      sourceQuestionId: row.questionId,
     }));
   }
 
@@ -347,6 +356,7 @@ export async function submitQuizAnswer(input: {
   sessionId: string;
   questionId: string;
   selectedIndex: number;
+  userId?: string;
 }): Promise<SubmitAnswerResponse> {
   const db = getOptionalDb();
   const q = await getQuestion(db, input.questionId);
@@ -354,19 +364,58 @@ export async function submitQuizAnswer(input: {
     throw new ApiError("BAD_REQUEST", 400, "問題が見つかりませんでした");
   }
 
-  const out = {
-    isCorrect: input.selectedIndex === q.correctIndex,
-    explanation: q.explanation,
-  };
+  const isCorrect = input.selectedIndex === q.correctIndex;
 
   await recordAttempt({
     sessionId: input.sessionId,
     questionId: input.questionId,
     selectedIndex: input.selectedIndex,
-    isCorrect: out.isCorrect,
-    explanation: out.explanation,
+    isCorrect,
+    explanation: q.explanation,
     answeredAt: new Date(),
   });
+
+  const out: SubmitAnswerResponse = { isCorrect, explanation: q.explanation };
+
+  // ログイン済みかつ DB が使える場合のみ review_queue を更新
+  if (db && input.userId) {
+    // review_queue を更新する対象の questionId（複製元があればそちらを使う）
+    const reviewKeyId = q.sourceQuestionId ?? q.questionId;
+    const nowMs = Date.now();
+
+    if (!isCorrect) {
+      // 不正解: UPSERT（翌日に nextReviewAt をセット、wrongCount をインクリメント）
+      const nextReviewAt = nowMs + 24 * 60 * 60 * 1000;
+      await db
+        .insert(reviewQueue)
+        .values({
+          id: crypto.randomUUID(),
+          userId: input.userId,
+          questionId: reviewKeyId,
+          nextReviewAt,
+          wrongCount: 1,
+        })
+        .onConflictDoUpdate({
+          target: [reviewQueue.userId, reviewQueue.questionId],
+          set: {
+            nextReviewAt,
+            wrongCount: sql`${reviewQueue.wrongCount} + 1`,
+          },
+        });
+      out.isReviewRegistered = true;
+    } else {
+      // 正解: review_queue にエントリがある場合のみ nextReviewAt を 30 日後に更新
+      const nextReviewAt = nowMs + 30 * 24 * 60 * 60 * 1000;
+      const updated = await db
+        .update(reviewQueue)
+        .set({ nextReviewAt })
+        .where(and(eq(reviewQueue.userId, input.userId), eq(reviewQueue.questionId, reviewKeyId)))
+        .returning({ id: reviewQueue.id });
+      if (updated.length > 0) {
+        out.reviewNextAt = nextReviewAt;
+      }
+    }
+  }
 
   return out;
 }
@@ -391,7 +440,13 @@ const app = new Hono()
       throw new ApiError("BAD_REQUEST", 400, "選択肢が不正です");
     }
 
-    const out = await submitQuizAnswer({ sessionId, questionId, selectedIndex });
+    const { userId } = await auth();
+    const out = await submitQuizAnswer({
+      sessionId,
+      questionId,
+      selectedIndex,
+      userId: userId ?? undefined,
+    });
     return c.json(out);
   })
   .post("/session", async (c) => {

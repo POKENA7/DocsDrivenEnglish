@@ -19,8 +19,20 @@ vi.mock("@/db/client", () => ({
             questionStore.set(row.questionId, row);
           }
         }
-        return Promise.resolve();
+        // onConflictDoUpdate チェーン対応（直接 await も .onConflictDoUpdate() チェーンも両方サポート）
+        const p = Promise.resolve() as Promise<unknown> & {
+          onConflictDoUpdate: () => Promise<unknown[]>;
+        };
+        p.onConflictDoUpdate = () => Promise.resolve([]);
+        return p;
       },
+    }),
+    update: () => ({
+      set: () => ({
+        where: () => ({
+          returning: () => Promise.resolve([]),
+        }),
+      }),
     }),
     select: () => ({
       from: () => ({

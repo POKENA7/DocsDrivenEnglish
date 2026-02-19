@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { auth } from "@clerk/nextjs/server";
 
 import type { StartSessionResponse, SubmitAnswerResponse } from "@/app/api/[[...route]]/quiz";
 import { submitQuizAnswer } from "@/app/api/[[...route]]/quiz";
@@ -17,7 +18,8 @@ export async function continueSessionAction(
 export async function submitQuizAnswerAction(
   input: SubmitAnswerInput,
 ): Promise<SubmitAnswerResponse> {
-  return submitQuizAnswer(input);
+  const { userId } = await auth();
+  return submitQuizAnswer({ ...input, userId: userId ?? undefined });
 }
 
 export async function continueSessionFormAction(formData: FormData): Promise<void> {
