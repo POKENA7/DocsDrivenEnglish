@@ -1,8 +1,26 @@
+"use client";
+
+import { useState } from "react";
+
 import { startSessionFormAction } from "../_api/actions";
 
 import SubmitButton from "./SubmitButton";
 
 export default function LearnPage() {
+  const [questionCount, setQuestionCount] = useState(10);
+  const [reviewQuestionCount, setReviewQuestionCount] = useState(2);
+
+  function handleQuestionCountChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const val = Math.max(1, Math.min(20, Number(e.target.value) || 1));
+    setQuestionCount(val);
+    // 出題問題数を下回っていたら上限に丸める（少なくとも1問は新規問題）
+    if (reviewQuestionCount >= val) {
+      setReviewQuestionCount(val - 1);
+    }
+  }
+
+  const maxReview = questionCount - 1;
+
   return (
     <main className="container-page page">
       <div className="reveal">
@@ -62,15 +80,38 @@ export default function LearnPage() {
               type="number"
               min={1}
               max={20}
-              defaultValue={10}
+              value={questionCount}
+              onChange={handleQuestionCountChange}
               className="input w-28"
             />
             <p className="text-xs text-muted-foreground">1〜20問の範囲で設定できます</p>
           </div>
 
+          <div className="mt-6 space-y-2">
+            <label className="text-sm font-medium" htmlFor="reviewQuestionCount">
+              うち復習問題数（上限）
+            </label>
+            <select
+              id="reviewQuestionCount"
+              name="reviewQuestionCount"
+              value={reviewQuestionCount}
+              onChange={(e) => setReviewQuestionCount(Number(e.target.value))}
+              className="input w-28"
+            >
+              {Array.from({ length: maxReview + 1 }, (_, i) => (
+                <option key={i} value={i}>
+                  {i}問まで
+                </option>
+              ))}
+            </select>
+            <p className="text-xs text-muted-foreground">
+              過去に間違えた問題を優先的に出題します（ログイン時のみ有効）
+            </p>
+          </div>
+
           <div className="mt-6 flex items-center gap-3">
             <SubmitButton />
-            <p className="text-xs text-muted-foreground">設定した問題数のクイズが始まります</p>
+            <p className="text-xs text-muted-foreground">{questionCount}問のクイズが始まります</p>
           </div>
         </section>
       </form>

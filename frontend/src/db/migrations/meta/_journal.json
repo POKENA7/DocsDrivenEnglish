@@ -15,6 +15,13 @@
       "when": 1771419384885,
       "tag": "0001_optimal_morbius",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1771459189415,
+      "tag": "0002_safe_matthew_murdock",
+      "breakpoints": true
     }
   ]
 }
