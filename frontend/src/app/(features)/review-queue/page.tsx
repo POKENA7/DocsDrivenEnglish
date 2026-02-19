@@ -1,65 +1,6 @@
 import { auth } from "@clerk/nextjs/server";
 
-import { getCloudflareContext } from "@opennextjs/cloudflare";
-
-import { createDb } from "@/db/client";
-import { questions as questionsTable, reviewQueue } from "@/db/schema";
-import { eq } from "drizzle-orm";
-
-type ReviewItem = {
-  questionId: string;
-  prompt: string;
-  nextReviewAt: number;
-  wrongCount: number;
-};
-
-async function fetchReviewQueue(userId: string): Promise<{
-  dueItems: ReviewItem[];
-  upcomingItems: ReviewItem[];
-}> {
-  try {
-    const { env } = getCloudflareContext();
-    const dbBinding = (env as Record<string, unknown>).DB;
-    if (!dbBinding) return { dueItems: [], upcomingItems: [] };
-
-    const db = createDb(dbBinding as import("@cloudflare/workers-types").D1Database);
-    const nowMs = Date.now();
-
-    const rows = await db
-      .select({
-        questionId: questionsTable.questionId,
-        prompt: questionsTable.prompt,
-        nextReviewAt: reviewQueue.nextReviewAt,
-        wrongCount: reviewQueue.wrongCount,
-      })
-      .from(reviewQueue)
-      .innerJoin(questionsTable, eq(reviewQueue.questionId, questionsTable.questionId))
-      .where(eq(reviewQueue.userId, userId))
-      .orderBy(reviewQueue.nextReviewAt);
-
-    const dueItems = rows
-      .filter((r) => r.nextReviewAt <= nowMs)
-      .map((r) => ({
-        questionId: r.questionId,
-        prompt: r.prompt,
-        nextReviewAt: r.nextReviewAt,
-        wrongCount: r.wrongCount,
-      }));
-
-    const upcomingItems = rows
-      .filter((r) => r.nextReviewAt > nowMs)
-      .map((r) => ({
-        questionId: r.questionId,
-        prompt: r.prompt,
-        nextReviewAt: r.nextReviewAt,
-        wrongCount: r.wrongCount,
-      }));
-
-    return { dueItems, upcomingItems };
-  } catch {
-    return { dueItems: [], upcomingItems: [] };
-  }
-}
+import { getReviewQueue } from "@/app/api/[[...route]]/review-queue";
 
 function formatDate(ms: number): string {
   return new Date(ms).toLocaleDateString("ja-JP", {
@@ -91,7 +32,7 @@ export default async function ReviewQueuePage() {
     );
   }
 
-  const { dueItems, upcomingItems } = await fetchReviewQueue(userId);
+  const { dueItems, upcomingItems } = await getReviewQueue(userId);
   const total = dueItems.length + upcomingItems.length;
 
   return (

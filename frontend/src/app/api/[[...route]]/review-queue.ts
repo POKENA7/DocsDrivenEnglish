@@ -1,5 +1,7 @@
 import "server-only";
 
+import { cache } from "react";
+
 import { Hono } from "hono";
 
 import { auth } from "@clerk/nextjs/server";
@@ -8,7 +10,7 @@ import { getCloudflareContext } from "@opennextjs/cloudflare";
 
 import { createDb } from "@/db/client";
 import { questions as questionsTable, reviewQueue } from "@/db/schema";
-import { and, eq, gt, lte } from "drizzle-orm";
+import { and, eq, lte } from "drizzle-orm";
 
 import { ApiError } from "./errors";
 
@@ -80,8 +82,8 @@ async function fetchReviewItems(
   return { dueItems, upcomingItems };
 }
 
-// 期限切れ復習問題件数のみを取得する（LearnPage バナー用）
-export async function getDueReviewCount(userId: string): Promise<number> {
+// LearnPage バナー用: 期限切れ復習問題件数（React.cache でリクエスト内重複排除）
+export const getDueReviewCount = cache(async (userId: string): Promise<number> => {
   const db = getOptionalDb();
   if (!db) return 0;
 
@@ -92,21 +94,42 @@ export async function getDueReviewCount(userId: string): Promise<number> {
     .where(and(eq(reviewQueue.userId, userId), lte(reviewQueue.nextReviewAt, nowMs)));
 
   return rows.length;
-}
+});
 
-// 期限切れ復習問題件数のみを取得する（LearnPage バナー用・upcoming 除く）
-export async function getUpcomingReviewCount(userId: string): Promise<number> {
-  const db = getOptionalDb();
-  if (!db) return 0;
+export type ReviewQueueDisplayItem = {
+  questionId: string;
+  prompt: string;
+  nextReviewAt: number;
+  wrongCount: number;
+};
 
-  const nowMs = Date.now();
-  const rows = await db
-    .select({ id: reviewQueue.id })
-    .from(reviewQueue)
-    .where(and(eq(reviewQueue.userId, userId), gt(reviewQueue.nextReviewAt, nowMs)));
+// ReviewQueuePage 用: due / upcoming 分類して返す
+export const getReviewQueue = cache(
+  async (
+    userId: string,
+  ): Promise<{ dueItems: ReviewQueueDisplayItem[]; upcomingItems: ReviewQueueDisplayItem[] }> => {
+    const db = getOptionalDb();
+    if (!db) return { dueItems: [], upcomingItems: [] };
 
-  return rows.length;
-}
+    const nowMs = Date.now();
+    const rows = await db
+      .select({
+        questionId: questionsTable.questionId,
+        prompt: questionsTable.prompt,
+        nextReviewAt: reviewQueue.nextReviewAt,
+        wrongCount: reviewQueue.wrongCount,
+      })
+      .from(reviewQueue)
+      .innerJoin(questionsTable, eq(reviewQueue.questionId, questionsTable.questionId))
+      .where(eq(reviewQueue.userId, userId))
+      .orderBy(reviewQueue.nextReviewAt);
+
+    return {
+      dueItems: rows.filter((r) => r.nextReviewAt <= nowMs),
+      upcomingItems: rows.filter((r) => r.nextReviewAt > nowMs),
+    };
+  },
+);
 
 const app = new Hono()
   // GET /api/review-queue/due — 期限切れ復習問題一覧
