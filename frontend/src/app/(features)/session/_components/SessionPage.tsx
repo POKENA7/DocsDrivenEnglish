@@ -118,6 +118,24 @@ export default function SessionPage({ session }: { session: SessionSnapshot }) {
             </p>
           </div>
         ) : null}
+
+        {result?.isReviewRegistered ? (
+          <p
+            className="reveal text-xs text-muted-foreground"
+            style={{ animationDelay: "200ms" }}
+            role="status"
+          >
+            📌 この問題は明日の復習に追加されました
+          </p>
+        ) : result?.reviewNextAt ? (
+          <p
+            className="reveal text-xs text-muted-foreground"
+            style={{ animationDelay: "200ms" }}
+            role="status"
+          >
+            🎉 復習クリア！次回は 30 日後に出題します
+          </p>
+        ) : null}
       </section>
     </main>
   );

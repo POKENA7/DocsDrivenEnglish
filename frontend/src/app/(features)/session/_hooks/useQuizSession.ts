@@ -28,6 +28,8 @@ export function useQuizSession(session: SessionSnapshot) {
   const [result, setResult] = useState<null | {
     isCorrect: boolean;
     explanation: string;
+    isReviewRegistered?: boolean;
+    reviewNextAt?: number;
   }>(null);
 
   const current = useMemo(() => session.questions[index], [index, session.questions]);

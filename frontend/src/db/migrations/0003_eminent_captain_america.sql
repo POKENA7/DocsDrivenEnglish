@@ -1,0 +1,1 @@
+ALTER TABLE `questions` ADD `source_question_id` text;
