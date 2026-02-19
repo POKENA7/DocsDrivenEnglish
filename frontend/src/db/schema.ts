@@ -1,4 +1,4 @@
-import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { integer, sqliteTable, text, unique } from "drizzle-orm/sqlite-core";
 
 export const studySessions = sqliteTable("study_sessions", {
   sessionId: text("session_id").primaryKey(),
@@ -32,3 +32,15 @@ export const attempts = sqliteTable("attempts", {
   explanation: text("explanation"),
   answeredAt: integer("answered_at", { mode: "timestamp_ms" }).notNull(),
 });
+
+export const reviewQueue = sqliteTable(
+  "review_queue",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id").notNull(),
+    questionId: text("question_id").notNull(),
+    nextReviewAt: integer("next_review_at").notNull(), // Unix timestamp ms
+    wrongCount: integer("wrong_count").notNull().default(1),
+  },
+  (table) => [unique().on(table.userId, table.questionId)],
+);

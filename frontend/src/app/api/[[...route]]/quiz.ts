@@ -8,9 +8,11 @@ import { getCloudflareContext } from "@opennextjs/cloudflare";
 
 import { createOpenAIParsedText } from "@/lib/openaiClient";
 
+import { auth } from "@clerk/nextjs/server";
+
 import { createDb } from "@/db/client";
-import { questions as questionsTable, studySessions } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { questions as questionsTable, reviewQueue, studySessions } from "@/db/schema";
+import { and, eq, lte } from "drizzle-orm";
 
 import { ApiError } from "./errors";
 import { recordAttempt } from "./history";
@@ -253,23 +255,54 @@ export async function startQuizSession(input: {
   mode: Mode;
   questionCount?: number;
   reviewQuestionCount?: number;
+  userId: string;
 }): Promise<StartSessionResponse> {
   const topic = input.topic.trim();
   if (!topic) {
     throw new ApiError("BAD_REQUEST", 400, "技術トピックを入力してください");
   }
 
+  const db = getOptionalDb();
   const plannedCount = input.questionCount ?? 10;
   const sessionId = crypto.randomUUID();
 
-  const generated = await generateQuizItemsFromTopic(topic, input.mode, plannedCount);
+  // 期限切れ復習問題を取得
+  const reviewQuestionCountRequested = input.reviewQuestionCount ?? 0;
+  let reviewQuestions: QuestionRecord[] = [];
+  if (reviewQuestionCountRequested > 0 && db) {
+    const now = Date.now();
+    const dueRows = await db
+      .select({
+        questionId: questionsTable.questionId,
+        prompt: questionsTable.prompt,
+        choicesJson: questionsTable.choicesJson,
+        correctIndex: questionsTable.correctIndex,
+        explanation: questionsTable.explanation,
+      })
+      .from(reviewQueue)
+      .innerJoin(questionsTable, eq(reviewQueue.questionId, questionsTable.questionId))
+      .where(and(eq(reviewQueue.userId, input.userId), lte(reviewQueue.nextReviewAt, now)))
+      .limit(reviewQuestionCountRequested);
 
-  const actualCount = generated.length;
-  if (actualCount <= 0) {
-    throw new ApiError("INTERNAL", 500, "問題の生成に失敗しました");
+    // 復習問題は新しい sessionId・questionId で新規セッションに紐付ける
+    reviewQuestions = dueRows.map((row) => ({
+      questionId: crypto.randomUUID(),
+      sessionId,
+      prompt: row.prompt,
+      choices: JSON.parse(row.choicesJson) as string[],
+      correctIndex: row.correctIndex,
+      explanation: row.explanation,
+    }));
   }
 
-  const questions: QuestionRecord[] = generated.map((item) => ({
+  // 新規 AI 生成問題数 = plannedCount - 実際の復習問題数
+  const newQuestionCount = plannedCount - reviewQuestions.length;
+  const generated =
+    newQuestionCount > 0
+      ? await generateQuizItemsFromTopic(topic, input.mode, newQuestionCount)
+      : [];
+
+  const newQuestions: QuestionRecord[] = generated.map((item) => ({
     questionId: crypto.randomUUID(),
     sessionId,
     prompt: item.prompt,
@@ -277,6 +310,14 @@ export async function startQuizSession(input: {
     correctIndex: item.correctIndex,
     explanation: item.explanation,
   }));
+
+  // 復習問題を先頭に、AI 生成問題を後ろに結合
+  const questions: QuestionRecord[] = [...reviewQuestions, ...newQuestions];
+
+  const actualCount = questions.length;
+  if (actualCount <= 0) {
+    throw new ApiError("INTERNAL", 500, "問題の生成に失敗しました");
+  }
 
   const session: SessionRecord = {
     sessionId,
@@ -287,7 +328,6 @@ export async function startQuizSession(input: {
     questions,
   };
 
-  const db = getOptionalDb();
   await persistSession(db, session);
 
   return {
@@ -378,7 +418,10 @@ const app = new Hono()
     const questionCount = parsed.success ? parsed.data.questionCount : 10;
     const reviewQuestionCount = parsed.success ? parsed.data.reviewQuestionCount : 0;
 
-    const out = await startQuizSession({ topic, mode, questionCount, reviewQuestionCount });
+    const { userId } = await auth();
+    if (!userId) throw new ApiError("UNAUTHORIZED", 401, "ログインが必要です");
+
+    const out = await startQuizSession({ topic, mode, questionCount, reviewQuestionCount, userId });
     return c.json(out);
   });
 
