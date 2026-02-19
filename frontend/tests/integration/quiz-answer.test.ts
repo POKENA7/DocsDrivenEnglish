@@ -5,12 +5,8 @@ import { apiApp } from "@/app/api/[[...route]]/app";
 // DB に永続化された question を保持するフェイクストア
 const questionStore = new Map<string, Record<string, unknown>>();
 
-vi.mock("@opennextjs/cloudflare", () => ({
-  getCloudflareContext: () => ({ env: { DB: {} } }),
-}));
-
-vi.mock("@/db/client", () => ({
-  createDb: () => ({
+vi.mock("@/db/client", () => {
+  const fakeDb = {
     insert: () => ({
       values: (data: unknown) => {
         const rows = Array.isArray(data) ? data : [data];
@@ -29,8 +25,13 @@ vi.mock("@/db/client", () => ({
         }),
       }),
     }),
-  }),
-}));
+  };
+
+  return {
+    createDb: () => fakeDb,
+    getOptionalDb: () => fakeDb,
+  };
+});
 
 vi.mock("@clerk/nextjs/server", () => ({
   auth: () => ({ userId: "test-user-id" }),
@@ -65,11 +66,6 @@ vi.mock("@/lib/openaiClient", () => {
         };
       },
     ),
-    createOpenAIResponse: vi.fn(async () => {
-      return {
-        output_text: "dummy",
-      };
-    }),
   };
 });
 

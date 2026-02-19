@@ -6,8 +6,6 @@ import ClerkProviderWrapper from "../ClerkProviderWrapper";
 
 import AuthButton from "./_components/AuthButton";
 
-export const dynamic = "force-dynamic";
-
 export default function FeaturesLayout({ children }: { children: ReactNode }) {
   return (
     <ClerkProviderWrapper>

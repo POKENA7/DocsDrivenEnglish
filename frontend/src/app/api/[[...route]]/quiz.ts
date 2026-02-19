@@ -4,13 +4,11 @@ import { Hono } from "hono";
 
 import { z } from "zod";
 
-import { getCloudflareContext } from "@opennextjs/cloudflare";
-
 import { createOpenAIParsedText } from "@/lib/openaiClient";
 
 import { auth } from "@clerk/nextjs/server";
 
-import { createDb } from "@/db/client";
+import { getOptionalDb } from "@/db/client";
 import { questions as questionsTable, reviewQueue, studySessions } from "@/db/schema";
 import { and, eq, lte } from "drizzle-orm";
 
@@ -54,22 +52,12 @@ type SessionRecord = {
   questions: QuestionRecord[];
 };
 
-const STRUCTURED_OUTPUTS_MODEL = "gpt-5-mini";
-
-function getOptionalDb() {
-  try {
-    const { env } = getCloudflareContext();
-    const db = (env as Record<string, unknown>).DB;
-    if (!db) return null;
-    return createDb(db as import("@cloudflare/workers-types").D1Database);
-  } catch {
-    return null;
-  }
-}
+const STRUCTURED_OUTPUTS_MODEL = "gpt-4o-mini";
 
 async function persistSession(
-  db: ReturnType<typeof createDb> | null,
+  db: ReturnType<typeof getOptionalDb>,
   session: SessionRecord,
+  userId: string,
 ): Promise<void> {
   if (!db) return;
 
@@ -77,7 +65,7 @@ async function persistSession(
 
   await db.insert(studySessions).values({
     sessionId: session.sessionId,
-    userId: null,
+    userId,
     topic: session.topic,
     mode: session.mode,
     plannedCount: session.plannedCount,
@@ -101,7 +89,7 @@ async function persistSession(
 }
 
 async function getQuestion(
-  db: ReturnType<typeof createDb> | null,
+  db: ReturnType<typeof getOptionalDb>,
   questionId: string,
 ): Promise<QuestionRecord | null> {
   if (!db) return null;
@@ -123,11 +111,6 @@ async function getQuestion(
     correctIndex: row.correctIndex,
     explanation: row.explanation,
   };
-}
-
-function assertMode(mode: unknown): Mode {
-  if (mode === "word" || mode === "reading") return mode;
-  throw new ApiError("BAD_REQUEST", 400, "mode が不正です");
 }
 
 export async function getSessionSnapshot(sessionId: string): Promise<SessionRecord | null> {
@@ -328,7 +311,7 @@ export async function startQuizSession(input: {
     questions,
   };
 
-  await persistSession(db, session);
+  await persistSession(db, session, input.userId);
 
   return {
     sessionId,
@@ -396,17 +379,6 @@ const app = new Hono()
   })
   .post("/session", async (c) => {
     const body = await c.req.json().catch((): unknown => null);
-    if (!body || typeof body !== "object") {
-      throw new ApiError("BAD_REQUEST", 400, "リクエストが不正です");
-    }
-
-    const record = body as Record<string, unknown>;
-
-    const topic = record.topic;
-    const mode = assertMode(record.mode);
-    if (typeof topic !== "string") {
-      throw new ApiError("BAD_REQUEST", 400, "トピックが不正です");
-    }
 
     const bodySchema = z.object({
       topic: z.string().min(1),
@@ -414,9 +386,12 @@ const app = new Hono()
       questionCount: z.number().int().min(1).max(20).optional().default(10),
       reviewQuestionCount: z.number().int().min(0).optional().default(0),
     });
-    const parsed = bodySchema.safeParse(record);
-    const questionCount = parsed.success ? parsed.data.questionCount : 10;
-    const reviewQuestionCount = parsed.success ? parsed.data.reviewQuestionCount : 0;
+    const parsed = bodySchema.safeParse(body);
+    if (!parsed.success) {
+      throw new ApiError("BAD_REQUEST", 400, "リクエストが不正です");
+    }
+
+    const { topic, mode, questionCount, reviewQuestionCount } = parsed.data;
 
     const { userId } = await auth();
     if (!userId) throw new ApiError("UNAUTHORIZED", 401, "ログインが必要です");

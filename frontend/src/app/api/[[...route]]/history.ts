@@ -2,10 +2,8 @@ import "server-only";
 
 import { Hono } from "hono";
 
-import { getCloudflareContext } from "@opennextjs/cloudflare";
-
 import { requireUserId } from "@/lib/auth";
-import { createDb } from "@/db/client";
+import { getOptionalDb } from "@/db/client";
 import { attempts as attemptsTable } from "@/db/schema";
 import { eq } from "drizzle-orm";
 
@@ -42,17 +40,6 @@ export function calculateHistorySummary(attempts: AttemptRecord[]) {
     correctRate,
     studyDays: days.size,
   };
-}
-
-function getOptionalDb() {
-  try {
-    const { env } = getCloudflareContext();
-    const db = (env as Record<string, unknown>).DB;
-    if (!db) return null;
-    return createDb(db as import("@cloudflare/workers-types").D1Database);
-  } catch {
-    return null;
-  }
 }
 
 export async function recordAttempt(attempt: PersistedAttemptInput) {

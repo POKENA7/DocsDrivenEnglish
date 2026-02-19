@@ -3,15 +3,7 @@
 import { redirect } from "next/navigation";
 import { auth } from "@clerk/nextjs/server";
 
-import type { StartSessionResponse } from "@/app/api/[[...route]]/quiz";
 import { startQuizSession } from "@/app/api/[[...route]]/quiz";
-
-import type { StartSessionInput } from "./query";
-import { startSessionQuery } from "./query";
-
-export async function startSessionAction(input: StartSessionInput): Promise<StartSessionResponse> {
-  return startSessionQuery(input);
-}
 
 export async function startSessionFormAction(formData: FormData): Promise<void> {
   const topic = String(formData.get("topic") ?? "").trim();

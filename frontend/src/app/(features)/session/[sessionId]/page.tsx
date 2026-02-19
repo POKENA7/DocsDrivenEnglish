@@ -1,6 +1,10 @@
+import { notFound } from "next/navigation";
+
 import SessionPage from "../_components/SessionPage";
 
 import { getSessionSnapshot } from "@/app/api/[[...route]]/quiz";
+
+export const dynamic = "force-dynamic";
 
 type Params = {
   sessionId: string;
@@ -15,11 +19,7 @@ export default async function SessionIdPage({ params }: PageProps) {
   const session = await getSessionSnapshot(sessionId);
 
   if (!session) {
-    return (
-      <main className="mx-auto max-w-2xl px-6 py-10">
-        <p className="text-sm text-muted-foreground">セッションが見つかりませんでした。</p>
-      </main>
-    );
+    notFound();
   }
 
   return <SessionPage session={session} />;

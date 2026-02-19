@@ -23,10 +23,6 @@ export function getOpenAIClient(): OpenAI {
   return cachedClient;
 }
 
-export async function createOpenAIResponse(input: string, model: string) {
-  return createOpenAIResponseWithOptions(input, model);
-}
-
 export async function createOpenAIParsedText<TSchema extends z.ZodTypeAny>(
   input: string,
   model: string,
@@ -55,8 +51,6 @@ export async function createOpenAIParsedText<TSchema extends z.ZodTypeAny>(
       },
       { signal: controller.signal },
     );
-
-    console.log("[openai] response = ", response);
 
     const outputParsed = response.output_parsed;
     if (outputParsed !== null) {
@@ -112,34 +106,6 @@ export async function createOpenAIParsedText<TSchema extends z.ZodTypeAny>(
     });
 
     return parsedByZod;
-  } finally {
-    clearTimeout(timeoutId);
-  }
-}
-
-export async function createOpenAIResponseWithOptions(
-  input: string,
-  model: string,
-  options?: {
-    timeoutMs?: number;
-    maxOutputTokens?: number;
-  },
-) {
-  const timeoutMs = options?.timeoutMs ?? OPENAI_TIMEOUT_MS;
-  const maxOutputTokens = options?.maxOutputTokens ?? OPENAI_MAX_OUTPUT_TOKENS;
-
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
-
-  try {
-    return await getOpenAIClient().responses.create(
-      {
-        model,
-        input,
-        max_output_tokens: maxOutputTokens,
-      },
-      { signal: controller.signal },
-    );
   } finally {
     clearTimeout(timeoutId);
   }

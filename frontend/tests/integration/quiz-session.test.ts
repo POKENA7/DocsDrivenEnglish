@@ -35,11 +35,6 @@ vi.mock("@/lib/openaiClient", () => {
         };
       },
     ),
-    createOpenAIResponse: vi.fn(async () => {
-      return {
-        output_text: "dummy",
-      };
-    }),
   };
 });
 
