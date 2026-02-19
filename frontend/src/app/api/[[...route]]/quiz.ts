@@ -255,7 +255,7 @@ export async function startQuizSession(input: {
   mode: Mode;
   questionCount?: number;
   reviewQuestionCount?: number;
-  userId?: string | null;
+  userId: string;
 }): Promise<StartSessionResponse> {
   const topic = input.topic.trim();
   if (!topic) {
@@ -265,12 +265,11 @@ export async function startQuizSession(input: {
   const db = getOptionalDb();
   const plannedCount = input.questionCount ?? 10;
   const sessionId = crypto.randomUUID();
-  const userId = input.userId ?? null;
 
-  // 期限切れ復習問題を取得（ログイン済み且つ reviewQuestionCount > 0 の場合のみ）
+  // 期限切れ復習問題を取得
   const reviewQuestionCountRequested = input.reviewQuestionCount ?? 0;
   let reviewQuestions: QuestionRecord[] = [];
-  if (reviewQuestionCountRequested > 0 && userId && db) {
+  if (reviewQuestionCountRequested > 0 && db) {
     const now = Date.now();
     const dueRows = await db
       .select({
@@ -282,7 +281,7 @@ export async function startQuizSession(input: {
       })
       .from(reviewQueue)
       .innerJoin(questionsTable, eq(reviewQueue.questionId, questionsTable.questionId))
-      .where(and(eq(reviewQueue.userId, userId), lte(reviewQueue.nextReviewAt, now)))
+      .where(and(eq(reviewQueue.userId, input.userId), lte(reviewQueue.nextReviewAt, now)))
       .limit(reviewQuestionCountRequested);
 
     // 復習問題は新しい sessionId・questionId で新規セッションに紐付ける
@@ -419,13 +418,8 @@ const app = new Hono()
     const questionCount = parsed.success ? parsed.data.questionCount : 10;
     const reviewQuestionCount = parsed.success ? parsed.data.reviewQuestionCount : 0;
 
-    let userId: string | null = null;
-    try {
-      const { userId: uid } = await auth();
-      userId = uid;
-    } catch {
-      // Clerk 未設定の場合は null のまま
-    }
+    const { userId } = await auth();
+    if (!userId) throw new ApiError("UNAUTHORIZED", 401, "ログインが必要です");
 
     const out = await startQuizSession({ topic, mode, questionCount, reviewQuestionCount, userId });
     return c.json(out);

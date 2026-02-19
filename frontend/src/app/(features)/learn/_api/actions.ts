@@ -30,13 +30,8 @@ export async function startSessionFormAction(formData: FormData): Promise<void> 
   if (!topic) return;
   if (mode !== "word" && mode !== "reading") return;
 
-  let userId: string | null = null;
-  try {
-    const { userId: uid } = await auth();
-    userId = uid;
-  } catch {
-    // Clerk 未設定の場合は null のまま
-  }
+  const { userId } = await auth();
+  if (!userId) return;
 
   const session = await startQuizSession({
     topic,

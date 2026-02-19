@@ -2,6 +2,10 @@ import { describe, expect, it, vi } from "vitest";
 
 import { apiApp } from "@/app/api/[[...route]]/app";
 
+vi.mock("@clerk/nextjs/server", () => ({
+  auth: vi.fn(async () => ({ userId: "test-user" })),
+}));
+
 vi.mock("@/lib/openaiClient", () => {
   return {
     OPENAI_MAX_OUTPUT_TOKENS: 10,

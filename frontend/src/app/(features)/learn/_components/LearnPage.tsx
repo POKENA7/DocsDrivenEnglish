@@ -104,9 +104,7 @@ export default function LearnPage() {
                 </option>
               ))}
             </select>
-            <p className="text-xs text-muted-foreground">
-              過去に間違えた問題を優先的に出題します（ログイン時のみ有効）
-            </p>
+            <p className="text-xs text-muted-foreground">過去に間違えた問題を優先的に出題します</p>
           </div>
 
           <div className="mt-6 flex items-center gap-3">
