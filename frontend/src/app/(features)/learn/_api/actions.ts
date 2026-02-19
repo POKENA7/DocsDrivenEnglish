@@ -1,20 +1,14 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { auth } from "@clerk/nextjs/server";
 
-import type { StartSessionResponse } from "@/app/api/[[...route]]/quiz";
 import { startQuizSession } from "@/app/api/[[...route]]/quiz";
-
-import type { StartSessionInput } from "./query";
-import { startSessionQuery } from "./query";
-
-export async function startSessionAction(input: StartSessionInput): Promise<StartSessionResponse> {
-  return startSessionQuery(input);
-}
+import { requireUserId } from "@/lib/auth";
 
 export async function startSessionFormAction(formData: FormData): Promise<void> {
-  const topic = String(formData.get("topic") ?? "").trim();
+  const topic = String(formData.get("topic") ?? "")
+    .trim()
+    .slice(0, 200);
   const mode = String(formData.get("mode") ?? "word");
   const questionCountRaw = Number(formData.get("questionCount") ?? 10);
   const questionCount =
@@ -30,8 +24,7 @@ export async function startSessionFormAction(formData: FormData): Promise<void> 
   if (!topic) return;
   if (mode !== "word" && mode !== "reading") return;
 
-  const { userId } = await auth();
-  if (!userId) return;
+  const userId = await requireUserId();
 
   const session = await startQuizSession({
     topic,
