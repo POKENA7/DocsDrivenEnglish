@@ -3,7 +3,7 @@ import "server-only";
 import type { Context } from "hono";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
 
-export type ApiErrorCode =
+type ApiErrorCode =
   | "BAD_REQUEST"
   | "UNAUTHORIZED"
   | "UPSTREAM_FETCH_FAILED"

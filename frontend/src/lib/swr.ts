@@ -1,10 +1,6 @@
 import type { SWRConfiguration } from "swr";
 
-export type ApiErrorBody = {
-  message?: string;
-};
-
-export class ApiClientError extends Error {
+class ApiClientError extends Error {
   readonly status: number;
   readonly body: unknown;
 
@@ -35,7 +31,7 @@ async function readJsonSafely(res: Response): Promise<unknown> {
   }
 }
 
-export async function unwrapJson<T>(res: Response): Promise<T> {
+async function unwrapJson<T>(res: Response): Promise<T> {
   if (res.ok) {
     return (await res.json()) as T;
   }

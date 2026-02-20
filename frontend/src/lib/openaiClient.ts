@@ -6,12 +6,12 @@ import { z } from "zod";
 
 import { getEnv } from "@/app/env/env";
 
-export const OPENAI_TIMEOUT_MS = 90_000;
-export const OPENAI_MAX_OUTPUT_TOKENS = 2_048;
+const OPENAI_TIMEOUT_MS = 90_000;
+const OPENAI_MAX_OUTPUT_TOKENS = 2_048;
 
 let cachedClient: OpenAI | null = null;
 
-export function getOpenAIClient(): OpenAI {
+function getOpenAIClient(): OpenAI {
   if (cachedClient) return cachedClient;
 
   const env = getEnv();
@@ -21,10 +21,6 @@ export function getOpenAIClient(): OpenAI {
   });
 
   return cachedClient;
-}
-
-export async function createOpenAIResponse(input: string, model: string) {
-  return createOpenAIResponseWithOptions(input, model);
 }
 
 export async function createOpenAIParsedText<TSchema extends z.ZodTypeAny>(
@@ -112,34 +108,6 @@ export async function createOpenAIParsedText<TSchema extends z.ZodTypeAny>(
     });
 
     return parsedByZod;
-  } finally {
-    clearTimeout(timeoutId);
-  }
-}
-
-export async function createOpenAIResponseWithOptions(
-  input: string,
-  model: string,
-  options?: {
-    timeoutMs?: number;
-    maxOutputTokens?: number;
-  },
-) {
-  const timeoutMs = options?.timeoutMs ?? OPENAI_TIMEOUT_MS;
-  const maxOutputTokens = options?.maxOutputTokens ?? OPENAI_MAX_OUTPUT_TOKENS;
-
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
-
-  try {
-    return await getOpenAIClient().responses.create(
-      {
-        model,
-        input,
-        max_output_tokens: maxOutputTokens,
-      },
-      { signal: controller.signal },
-    );
   } finally {
     clearTimeout(timeoutId);
   }
