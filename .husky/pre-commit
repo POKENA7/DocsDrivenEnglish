@@ -1,1 +1,1 @@
-cd frontend && npm run knip || exit 1
+cd frontend && pnpm run knip || exit 1
