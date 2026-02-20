@@ -15,7 +15,7 @@ import { questions as questionsTable, reviewQueue, studySessions } from "@/db/sc
 import { and, eq, lte, sql } from "drizzle-orm";
 
 import { ApiError } from "./errors";
-import { recordAttempt } from "./history";
+import { recordAttempt } from "@/app/(features)/history/_api/mutations";
 
 type Mode = "word" | "reading";
 

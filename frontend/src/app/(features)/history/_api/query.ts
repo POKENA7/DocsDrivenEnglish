@@ -6,13 +6,38 @@ import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { createDb } from "@/db/client";
 import { attempts as attemptsTable } from "@/db/schema";
 import { requireUserId } from "@/lib/auth";
-import { calculateHistorySummary } from "@/app/api/[[...route]]/history";
+
+type AttemptRecord = {
+  answeredAt: Date;
+  isCorrect: boolean;
+};
 
 type HistorySummary = {
   attemptCount: number;
   correctRate: number;
   studyDays: number;
 };
+
+export function calculateHistorySummary(attempts: AttemptRecord[]): HistorySummary {
+  const attemptCount = attempts.length;
+  const correctCount = attempts.filter((a) => a.isCorrect).length;
+  const correctRate = attemptCount === 0 ? 0 : correctCount / attemptCount;
+
+  const days = new Set<string>();
+  for (const a of attempts) {
+    const d = new Date(a.answeredAt);
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
+      d.getDate(),
+    ).padStart(2, "0")}`;
+    days.add(key);
+  }
+
+  return {
+    attemptCount,
+    correctRate,
+    studyDays: days.size,
+  };
+}
 
 export async function getHistorySummaryQuery(): Promise<HistorySummary> {
   const userId = await requireUserId();
