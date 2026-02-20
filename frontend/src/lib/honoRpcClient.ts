@@ -2,7 +2,7 @@ import { hc } from "hono/client";
 
 import type { AppType } from "@/app/api/[[...route]]/app";
 
-export type HonoRpcClient = {
+type HonoRpcClient = {
   quiz: {
     session: {
       $post: (args: { json: { topic: string; mode: "word" | "reading" } }) => Promise<Response>;
@@ -20,7 +20,7 @@ export type HonoRpcClient = {
   };
 };
 
-export function createHonoRpcClient(baseUrl?: string) {
+function createHonoRpcClient(baseUrl?: string) {
   return hc<AppType>(baseUrl ?? "") as unknown as HonoRpcClient;
 }
 

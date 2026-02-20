@@ -96,7 +96,7 @@ export const getDueReviewCount = cache(async (userId: string): Promise<number> =
   return result?.count ?? 0;
 });
 
-export type ReviewQueueDisplayItem = {
+type ReviewQueueDisplayItem = {
   questionId: string;
   prompt: string;
   nextReviewAt: number;

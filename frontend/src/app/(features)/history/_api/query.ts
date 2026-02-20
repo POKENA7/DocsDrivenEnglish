@@ -8,7 +8,7 @@ import { attempts as attemptsTable } from "@/db/schema";
 import { requireUserId } from "@/lib/auth";
 import { calculateHistorySummary } from "@/app/api/[[...route]]/history";
 
-export type HistorySummary = {
+type HistorySummary = {
   attemptCount: number;
   correctRate: number;
   studyDays: number;
