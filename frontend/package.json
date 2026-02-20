@@ -17,7 +17,8 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate:local": "wrangler d1 migrations apply DB --local --persist-to .wrangler/state",
     "db:migrate:remote": "wrangler d1 migrations apply DB --remote",
-    "knip": "knip"
+    "knip": "knip",
+    "prepare": "cd .. && husky"
   },
   "dependencies": {
     "@clerk/nextjs": "^6.36.5",
@@ -41,6 +42,7 @@
     "eslint": "^9",
     "eslint-config-next": "15",
     "eslint-config-prettier": "^10.1.8",
+    "husky": "^9.1.7",
     "knip": "^5.84.1",
     "prettier": "^3.7.4",
     "tailwindcss": "^4",
