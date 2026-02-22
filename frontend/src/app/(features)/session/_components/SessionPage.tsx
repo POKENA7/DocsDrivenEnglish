@@ -59,7 +59,7 @@ export default function SessionPage({ session }: { session: SessionSnapshot }) {
 
               return (
                 <label
-                  key={i}
+                  key={`${current.questionId}-${i}`}
                   className={`choice ${extra}`}
                   data-disabled={disabled ? "true" : "false"}
                 >
