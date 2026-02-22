@@ -1,20 +1,23 @@
 import "server-only";
 
-import { Hono } from "hono";
-import { zValidator } from "@hono/zod-validator";
-
 import { z } from "zod";
-
-import { createOpenAIParsedText } from "@/lib/openaiClient";
-
-import { auth } from "@clerk/nextjs/server";
 
 import { createDb, getOptionalDb } from "@/db/client";
 import { questions as questionsTable, reviewQueue, studySessions } from "@/db/schema";
 import { and, eq, lte, sql } from "drizzle-orm";
 
-import { ApiError } from "./errors";
+import { createOpenAIParsedText } from "@/lib/openaiClient";
+
 import { recordAttempt } from "@/app/(features)/history/_api/mutations";
+
+export class ApiError extends Error {
+  readonly code: string;
+
+  constructor(code: string, message: string) {
+    super(message);
+    this.code = code;
+  }
+}
 
 type Mode = "word" | "reading";
 
@@ -36,6 +39,12 @@ export type SubmitAnswerResponse = {
   // 不正解時: 復習キューへの自動登録を通知 / 正解時(復習問題): 次回出題日時(ms)
   isReviewRegistered?: boolean;
   reviewNextAt?: number;
+};
+
+export type SubmitAnswerInput = {
+  sessionId: string;
+  questionId: string;
+  selectedIndex: number;
 };
 
 type QuestionRecord = {
@@ -249,7 +258,7 @@ export async function startQuizSession(input: {
 }): Promise<StartSessionResponse> {
   const topic = input.topic.trim();
   if (!topic) {
-    throw new ApiError("BAD_REQUEST", 400, "技術トピックを入力してください");
+    throw new ApiError("BAD_REQUEST", "技術トピックを入力してください");
   }
 
   const db = getOptionalDb();
@@ -308,7 +317,7 @@ export async function startQuizSession(input: {
 
   const actualCount = questions.length;
   if (actualCount <= 0) {
-    throw new ApiError("INTERNAL", 500, "問題の生成に失敗しました");
+    throw new ApiError("INTERNAL", "問題の生成に失敗しました");
   }
 
   const session: SessionRecord = {
@@ -335,16 +344,13 @@ export async function startQuizSession(input: {
   };
 }
 
-export async function submitQuizAnswer(input: {
-  sessionId: string;
-  questionId: string;
-  selectedIndex: number;
-  userId?: string;
-}): Promise<SubmitAnswerResponse> {
+export async function submitQuizAnswer(
+  input: SubmitAnswerInput & { userId?: string },
+): Promise<SubmitAnswerResponse> {
   const db = getOptionalDb();
   const q = await getQuestion(db, input.questionId);
   if (!q || q.sessionId !== input.sessionId) {
-    throw new ApiError("BAD_REQUEST", 400, "問題が見つかりませんでした");
+    throw new ApiError("BAD_REQUEST", "問題が見つかりませんでした");
   }
 
   const isCorrect = input.selectedIndex === q.correctIndex;
@@ -402,38 +408,3 @@ export async function submitQuizAnswer(input: {
 
   return out;
 }
-
-const answerBodySchema = z.object({
-  sessionId: z.string(),
-  questionId: z.string(),
-  selectedIndex: z.number().int().min(0).max(3),
-});
-
-const sessionBodySchema = z.object({
-  topic: z.string().min(1),
-  mode: z.enum(["word", "reading"]),
-  questionCount: z.number().int().min(1).max(20).optional().default(10),
-  reviewQuestionCount: z.number().int().min(0).optional().default(0),
-});
-
-const app = new Hono()
-  .post("/answer", zValidator("json", answerBodySchema), async (c) => {
-    const { sessionId, questionId, selectedIndex } = c.req.valid("json");
-    const { userId } = await auth();
-    const out = await submitQuizAnswer({
-      sessionId,
-      questionId,
-      selectedIndex,
-      userId: userId ?? undefined,
-    });
-    return c.json(out);
-  })
-  .post("/session", zValidator("json", sessionBodySchema), async (c) => {
-    const { topic, mode, questionCount, reviewQuestionCount } = c.req.valid("json");
-    const { userId } = await auth();
-    if (!userId) throw new ApiError("UNAUTHORIZED", 401, "ログインが必要です");
-    const out = await startQuizSession({ topic, mode, questionCount, reviewQuestionCount, userId });
-    return c.json(out);
-  });
-
-export default app;

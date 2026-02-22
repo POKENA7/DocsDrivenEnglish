@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
 
-import { stripUrlsFromText } from "@/app/api/[[...route]]/_utils/stripUrlsFromText";
+import { stripUrlsFromText } from "@/app/(features)/session/_utils/stripUrlsFromText";
 
 describe("stripUrlsFromText", () => {
   test("removes URL from markdown inline link but keeps label", () => {

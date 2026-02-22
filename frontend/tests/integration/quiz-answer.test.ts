@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { apiApp } from "@/app/api/[[...route]]/app";
+import { startQuizSession, submitQuizAnswer } from "@/app/(features)/session/_api/mutations";
 
 // DB に永続化された question を保持するフェイクストア
 const questionStore = new Map<string, Record<string, unknown>>();
@@ -88,36 +88,28 @@ vi.mock("@/lib/openaiClient", () => {
   };
 });
 
-describe("POST /api/quiz/answer", () => {
+describe("submitQuizAnswer", () => {
   beforeEach(() => {
     questionStore.clear();
   });
 
   it("scores answer", async () => {
-    const start = await apiApp.request("http://localhost/api/quiz/session", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ topic: "React Hooks", mode: "word" }),
-    });
-    expect(start.status).toBe(200);
-
-    const started = await start.json();
-    const first = started.questions[0];
-
-    const res = await apiApp.request("http://localhost/api/quiz/answer", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        sessionId: started.sessionId,
-        questionId: first.questionId,
-        selectedIndex: 0,
-      }),
+    const session = await startQuizSession({
+      topic: "React Hooks",
+      mode: "word",
+      userId: "test-user-id",
     });
 
-    expect(res.status).toBe(200);
+    const first = session.questions[0]!;
 
-    const json = await res.json();
-    expect(typeof json.isCorrect).toBe("boolean");
-    expect(typeof json.explanation).toBe("string");
+    const result = await submitQuizAnswer({
+      sessionId: session.sessionId,
+      questionId: first.questionId,
+      selectedIndex: 0,
+      userId: "test-user-id",
+    });
+
+    expect(typeof result.isCorrect).toBe("boolean");
+    expect(typeof result.explanation).toBe("string");
   });
 });
