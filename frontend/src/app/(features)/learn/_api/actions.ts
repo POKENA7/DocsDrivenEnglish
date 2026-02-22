@@ -2,8 +2,16 @@
 
 import { redirect } from "next/navigation";
 
-import { startQuizSession } from "@/app/(features)/session/_api/mutations";
+import { auth } from "@clerk/nextjs/server";
+
 import { requireUserId } from "@/lib/auth";
+
+import {
+  startQuizSession,
+  submitQuizAnswer,
+  type SubmitAnswerInput,
+  type SubmitAnswerResponse,
+} from "./mutations";
 
 export async function startSessionFormAction(formData: FormData): Promise<void> {
   const topic = String(formData.get("topic") ?? "")
@@ -33,5 +41,24 @@ export async function startSessionFormAction(formData: FormData): Promise<void> 
     reviewQuestionCount,
     userId,
   });
-  redirect(`/session/${session.sessionId}`);
+  redirect(`/learn/${session.sessionId}`);
+}
+
+export async function continueSessionFormAction(formData: FormData): Promise<void> {
+  const topic = String(formData.get("topic") ?? "").trim();
+  const mode = String(formData.get("mode") ?? "word");
+
+  if (!topic) return;
+  if (mode !== "word" && mode !== "reading") return;
+
+  const userId = await requireUserId();
+  const session = await startQuizSession({ topic, mode: mode as "word" | "reading", userId });
+  redirect(`/learn/${session.sessionId}`);
+}
+
+export async function submitQuizAnswerAction(
+  input: SubmitAnswerInput,
+): Promise<SubmitAnswerResponse> {
+  const { userId } = await auth();
+  return submitQuizAnswer({ ...input, userId: userId ?? undefined });
 }

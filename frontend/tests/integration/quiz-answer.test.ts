@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { startQuizSession, submitQuizAnswer } from "@/app/(features)/session/_api/mutations";
+import { startQuizSession, submitQuizAnswer } from "@/app/(features)/learn/_api/mutations";
 
 // DB に永続化された question を保持するフェイクストア
 const questionStore = new Map<string, Record<string, unknown>>();
