@@ -13,11 +13,8 @@ const config: KnipConfig = {
     // eslint.config.mjs で FlatCompat 経由の文字列参照のため knip が検知できない
     "eslint-config-next",
     "eslint-config-prettier",
-    // FlatCompat の内部依存
-    "@eslint/eslintrc",
     // Next.js / Tailwind が内部的に要求するが package.json に列挙不要なもの
     "postcss",
-    "server-only",
     // globals.css 内で @import しているが knip は CSS を解析しない
     "tailwindcss",
     "tw-animate-css",
