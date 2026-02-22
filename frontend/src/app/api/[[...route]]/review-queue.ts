@@ -6,24 +6,11 @@ import { Hono } from "hono";
 
 import { auth } from "@clerk/nextjs/server";
 
-import { getCloudflareContext } from "@opennextjs/cloudflare";
-
-import { createDb } from "@/db/client";
 import { questions as questionsTable, reviewQueue } from "@/db/schema";
+import { getOptionalDb } from "./_utils/getOptionalDb";
 import { and, count, eq, lte } from "drizzle-orm";
 
 import { ApiError } from "./errors";
-
-function getOptionalDb() {
-  try {
-    const { env } = getCloudflareContext();
-    const db = (env as Record<string, unknown>).DB;
-    if (!db) return null;
-    return createDb(db as import("@cloudflare/workers-types").D1Database);
-  } catch {
-    return null;
-  }
-}
 
 type ReviewQueueItem = {
   questionId: string;

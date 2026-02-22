@@ -5,13 +5,12 @@ import { zValidator } from "@hono/zod-validator";
 
 import { z } from "zod";
 
-import { getCloudflareContext } from "@opennextjs/cloudflare";
-
 import { createOpenAIParsedText } from "@/lib/openaiClient";
 
 import { auth } from "@clerk/nextjs/server";
 
 import { createDb } from "@/db/client";
+import { getOptionalDb } from "./_utils/getOptionalDb";
 import { questions as questionsTable, reviewQueue, studySessions } from "@/db/schema";
 import { and, eq, lte, sql } from "drizzle-orm";
 
@@ -61,17 +60,6 @@ type SessionRecord = {
 };
 
 const STRUCTURED_OUTPUTS_MODEL = "gpt-5-mini";
-
-function getOptionalDb() {
-  try {
-    const { env } = getCloudflareContext();
-    const db = (env as Record<string, unknown>).DB;
-    if (!db) return null;
-    return createDb(db as import("@cloudflare/workers-types").D1Database);
-  } catch {
-    return null;
-  }
-}
 
 async function persistSession(
   db: ReturnType<typeof createDb> | null,
