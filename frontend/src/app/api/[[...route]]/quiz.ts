@@ -9,8 +9,7 @@ import { createOpenAIParsedText } from "@/lib/openaiClient";
 
 import { auth } from "@clerk/nextjs/server";
 
-import { createDb } from "@/db/client";
-import { getOptionalDb } from "./_utils/getOptionalDb";
+import { createDb, getOptionalDb } from "@/db/client";
 import { questions as questionsTable, reviewQueue, studySessions } from "@/db/schema";
 import { and, eq, lte, sql } from "drizzle-orm";
 

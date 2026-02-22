@@ -9,39 +9,42 @@ vi.mock("@opennextjs/cloudflare", () => ({
   getCloudflareContext: () => ({ env: { DB: {} } }),
 }));
 
-vi.mock("@/db/client", () => ({
-  createDb: () => ({
-    insert: () => ({
-      values: (data: unknown) => {
-        const rows = Array.isArray(data) ? data : [data];
-        for (const row of rows as Record<string, unknown>[]) {
-          if (typeof row.questionId === "string") {
-            questionStore.set(row.questionId, row);
-          }
+const mockDb = {
+  insert: () => ({
+    values: (data: unknown) => {
+      const rows = Array.isArray(data) ? data : [data];
+      for (const row of rows as Record<string, unknown>[]) {
+        if (typeof row.questionId === "string") {
+          questionStore.set(row.questionId, row);
         }
-        // onConflictDoUpdate チェーン対応（直接 await も .onConflictDoUpdate() チェーンも両方サポート）
-        const p = Promise.resolve() as Promise<unknown> & {
-          onConflictDoUpdate: () => Promise<unknown[]>;
-        };
-        p.onConflictDoUpdate = () => Promise.resolve([]);
-        return p;
-      },
-    }),
-    update: () => ({
-      set: () => ({
-        where: () => ({
-          returning: () => Promise.resolve([]),
-        }),
-      }),
-    }),
-    select: () => ({
-      from: () => ({
-        where: () => ({
-          limit: () => Promise.resolve([...questionStore.values()].slice(0, 1)),
-        }),
+      }
+      // onConflictDoUpdate チェーン対応（直接 await も .onConflictDoUpdate() チェーンも両方サポート）
+      const p = Promise.resolve() as Promise<unknown> & {
+        onConflictDoUpdate: () => Promise<unknown[]>;
+      };
+      p.onConflictDoUpdate = () => Promise.resolve([]);
+      return p;
+    },
+  }),
+  update: () => ({
+    set: () => ({
+      where: () => ({
+        returning: () => Promise.resolve([]),
       }),
     }),
   }),
+  select: () => ({
+    from: () => ({
+      where: () => ({
+        limit: () => Promise.resolve([...questionStore.values()].slice(0, 1)),
+      }),
+    }),
+  }),
+};
+
+vi.mock("@/db/client", () => ({
+  createDb: () => mockDb,
+  getOptionalDb: () => mockDb,
 }));
 
 vi.mock("@clerk/nextjs/server", () => ({

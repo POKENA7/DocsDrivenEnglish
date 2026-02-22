@@ -6,8 +6,8 @@ import { Hono } from "hono";
 
 import { auth } from "@clerk/nextjs/server";
 
+import { getOptionalDb } from "@/db/client";
 import { questions as questionsTable, reviewQueue } from "@/db/schema";
-import { getOptionalDb } from "./_utils/getOptionalDb";
 import { and, count, eq, lte } from "drizzle-orm";
 
 import { ApiError } from "./errors";
