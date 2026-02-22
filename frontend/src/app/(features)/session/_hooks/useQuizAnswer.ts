@@ -1,28 +1,18 @@
-import useSWRMutation from "swr/mutation";
+import { useState } from "react";
 
 import { submitQuizAnswerAction } from "../_api/actions";
 
 export function useQuizAnswer() {
-  const mutation = useSWRMutation(
-    "quiz/answer",
-    async (
-      _key,
-      {
-        arg,
-      }: {
-        arg: {
-          sessionId: string;
-          questionId: string;
-          selectedIndex: number;
-        };
-      },
-    ) => {
-      return submitQuizAnswerAction(arg);
-    },
-  );
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  return {
-    submit: mutation.trigger,
-    isSubmitting: mutation.isMutating,
-  };
+  async function submit(arg: { sessionId: string; questionId: string; selectedIndex: number }) {
+    setIsSubmitting(true);
+    try {
+      return await submitQuizAnswerAction(arg);
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  return { submit, isSubmitting };
 }

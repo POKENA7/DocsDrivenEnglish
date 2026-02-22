@@ -1,66 +1,30 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { apiApp } from "@/app/api/[[...route]]/app";
+import { ApiError, startQuizSession } from "@/app/(features)/session/_api/mutations";
 
-vi.mock("@clerk/nextjs/server", () => ({
-  auth: vi.fn(async () => ({ userId: "test-user" })),
+vi.mock("@/lib/openaiClient", () => ({
+  OPENAI_MAX_OUTPUT_TOKENS: 10,
+  OPENAI_TIMEOUT_MS: 1000,
+  // LLM が常に空配列を返すシナリオ
+  createOpenAIParsedText: vi.fn(async () => ({ items: [] })),
 }));
 
-vi.mock("@/lib/openaiClient", () => {
-  return {
-    OPENAI_MAX_OUTPUT_TOKENS: 10,
-    OPENAI_TIMEOUT_MS: 1000,
-    createOpenAIParsedText: vi.fn(
-      async (_input: string, _model: string, _schema: unknown, schemaName: string) => {
-        if (schemaName === "quiz_items_ja") {
-          return { items: [] };
-        }
-        return {
-          term: "term",
-          prompt: "ダミー",
-          choices: ["ダミー1", "ダミー2", "ダミー3", "ダミー4"],
-          correctIndex: 0,
-          explanation: "ダミー解説",
-        };
-      },
-    ),
-    createOpenAIResponse: vi.fn(async () => {
-      return {
-        output_text: "dummy",
-      };
-    }),
-  };
-});
-
-describe("POST /api/quiz/session errors", () => {
-  it("returns 400 when topic is empty", async () => {
-    const res = await apiApp.request("http://localhost/api/quiz/session", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ topic: "", mode: "word" }),
-    });
-
-    expect(res.status).toBe(400);
+describe("startQuizSession errors", () => {
+  it("throws ApiError when topic is empty", async () => {
+    await expect(
+      startQuizSession({ topic: "", mode: "word", userId: "test-user" }),
+    ).rejects.toThrow(ApiError);
   });
 
-  it("returns 400 when topic is whitespace only", async () => {
-    const res = await apiApp.request("http://localhost/api/quiz/session", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ topic: "   ", mode: "word" }),
-    });
-
-    expect(res.status).toBe(400);
+  it("throws ApiError when topic is whitespace only", async () => {
+    await expect(
+      startQuizSession({ topic: "   ", mode: "word", userId: "test-user" }),
+    ).rejects.toThrow(ApiError);
   });
 
-  it("returns 500 when LLM returns no items", async () => {
-    const res = await apiApp.request("http://localhost/api/quiz/session", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ topic: "React Hooks", mode: "word" }),
-    });
-
-    // items: [] のモックなので 500
-    expect(res.status).toBe(500);
+  it("throws ApiError when LLM returns no items", async () => {
+    await expect(
+      startQuizSession({ topic: "React Hooks", mode: "word", userId: "test-user" }),
+    ).rejects.toThrow(ApiError);
   });
 });

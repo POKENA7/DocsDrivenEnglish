@@ -3,11 +3,8 @@
 import { redirect } from "next/navigation";
 import { auth } from "@clerk/nextjs/server";
 
-import type { SubmitAnswerResponse } from "@/app/api/[[...route]]/quiz";
-import { submitQuizAnswer } from "@/app/api/[[...route]]/quiz";
-
-import type { SubmitAnswerInput } from "./query";
-import { continueSessionQuery } from "./query";
+import type { SubmitAnswerInput, SubmitAnswerResponse } from "./mutations";
+import { startQuizSession, submitQuizAnswer } from "./mutations";
 
 export async function submitQuizAnswerAction(
   input: SubmitAnswerInput,
@@ -23,6 +20,7 @@ export async function continueSessionFormAction(formData: FormData): Promise<voi
   if (!topic) return;
   if (mode !== "word" && mode !== "reading") return;
 
-  const session = await continueSessionQuery({ topic, mode });
+  const { userId } = await auth();
+  const session = await startQuizSession({ topic, mode, userId: userId ?? "" });
   redirect(`/session/${session.sessionId}`);
 }

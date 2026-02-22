@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 
-import { startQuizSession } from "@/app/api/[[...route]]/quiz";
+import { startQuizSession } from "@/app/(features)/session/_api/mutations";
 import { requireUserId } from "@/lib/auth";
 
 export async function startSessionFormAction(formData: FormData): Promise<void> {

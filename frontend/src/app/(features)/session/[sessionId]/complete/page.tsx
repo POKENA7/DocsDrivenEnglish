@@ -1,6 +1,6 @@
 import SessionCompletePage from "../../_components/SessionCompletePage";
 
-import { getSessionSnapshot } from "@/app/api/[[...route]]/quiz";
+import { getSessionSnapshot } from "@/app/(features)/session/_api/mutations";
 
 type Params = {
   sessionId: string;
