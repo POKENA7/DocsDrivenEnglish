@@ -1,6 +1,7 @@
 import "server-only";
 
 import { Hono } from "hono";
+import { zValidator } from "@hono/zod-validator";
 
 import { z } from "zod";
 
@@ -130,11 +131,6 @@ async function getQuestion(
     explanation: row.explanation,
     sourceQuestionId: row.sourceQuestionId ?? undefined,
   };
-}
-
-function assertMode(mode: unknown): Mode {
-  if (mode === "word" || mode === "reading") return mode;
-  throw new ApiError("BAD_REQUEST", 400, "mode が不正です");
 }
 
 export async function getSessionSnapshot(sessionId: string): Promise<SessionRecord | null> {
@@ -420,26 +416,22 @@ export async function submitQuizAnswer(input: {
   return out;
 }
 
+const answerBodySchema = z.object({
+  sessionId: z.string(),
+  questionId: z.string(),
+  selectedIndex: z.number().int().min(0).max(3),
+});
+
+const sessionBodySchema = z.object({
+  topic: z.string().min(1),
+  mode: z.enum(["word", "reading"]),
+  questionCount: z.number().int().min(1).max(20).optional().default(10),
+  reviewQuestionCount: z.number().int().min(0).optional().default(0),
+});
+
 const app = new Hono()
-  .post("/answer", async (c) => {
-    const body = await c.req.json().catch((): unknown => null);
-    if (!body || typeof body !== "object") {
-      throw new ApiError("BAD_REQUEST", 400, "リクエストが不正です");
-    }
-
-    const record = body as Record<string, unknown>;
-
-    const sessionId = record.sessionId;
-    const questionId = record.questionId;
-    const selectedIndex = record.selectedIndex;
-
-    if (typeof sessionId !== "string" || typeof questionId !== "string") {
-      throw new ApiError("BAD_REQUEST", 400, "リクエストが不正です");
-    }
-    if (typeof selectedIndex !== "number" || selectedIndex < 0 || selectedIndex > 3) {
-      throw new ApiError("BAD_REQUEST", 400, "選択肢が不正です");
-    }
-
+  .post("/answer", zValidator("json", answerBodySchema), async (c) => {
+    const { sessionId, questionId, selectedIndex } = c.req.valid("json");
     const { userId } = await auth();
     const out = await submitQuizAnswer({
       sessionId,
@@ -449,33 +441,10 @@ const app = new Hono()
     });
     return c.json(out);
   })
-  .post("/session", async (c) => {
-    const body = await c.req.json().catch((): unknown => null);
-    if (!body || typeof body !== "object") {
-      throw new ApiError("BAD_REQUEST", 400, "リクエストが不正です");
-    }
-
-    const record = body as Record<string, unknown>;
-
-    const topic = record.topic;
-    const mode = assertMode(record.mode);
-    if (typeof topic !== "string") {
-      throw new ApiError("BAD_REQUEST", 400, "トピックが不正です");
-    }
-
-    const bodySchema = z.object({
-      topic: z.string().min(1),
-      mode: z.enum(["word", "reading"]),
-      questionCount: z.number().int().min(1).max(20).optional().default(10),
-      reviewQuestionCount: z.number().int().min(0).optional().default(0),
-    });
-    const parsed = bodySchema.safeParse(record);
-    const questionCount = parsed.success ? parsed.data.questionCount : 10;
-    const reviewQuestionCount = parsed.success ? parsed.data.reviewQuestionCount : 0;
-
+  .post("/session", zValidator("json", sessionBodySchema), async (c) => {
+    const { topic, mode, questionCount, reviewQuestionCount } = c.req.valid("json");
     const { userId } = await auth();
     if (!userId) throw new ApiError("UNAUTHORIZED", 401, "ログインが必要です");
-
     const out = await startQuizSession({ topic, mode, questionCount, reviewQuestionCount, userId });
     return c.json(out);
   });
