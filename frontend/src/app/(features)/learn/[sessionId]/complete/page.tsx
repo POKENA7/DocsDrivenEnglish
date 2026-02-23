@@ -1,6 +1,6 @@
 import SessionCompletePage from "../../_components/SessionCompletePage";
 
-import { getSessionSnapshot } from "@/app/(features)/session/_api/mutations";
+import { getSessionSnapshot } from "@/app/(features)/learn/_api/mutations";
 
 type Params = {
   sessionId: string;
@@ -10,7 +10,7 @@ type PageProps = {
   params: Promise<Params>;
 };
 
-export default async function SessionComplete({ params }: PageProps) {
+export default async function LearnSessionComplete({ params }: PageProps) {
   const { sessionId } = await params;
   const session = await getSessionSnapshot(sessionId);
 

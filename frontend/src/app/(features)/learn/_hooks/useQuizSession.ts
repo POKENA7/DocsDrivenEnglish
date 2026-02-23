@@ -60,7 +60,7 @@ export function useQuizSession(session: SessionSnapshot) {
   function next() {
     const nextIndex = index + 1;
     if (nextIndex >= session.questions.length) {
-      router.push(`/session/${session.sessionId}/complete`);
+      router.push(`/learn/${session.sessionId}/complete`);
       return;
     }
 
