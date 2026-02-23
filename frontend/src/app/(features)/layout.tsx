@@ -25,6 +25,9 @@ export default function FeaturesLayout({ children }: { children: ReactNode }) {
                 <Link href="/history" className="btn btn-ghost h-9 px-3">
                   履歴
                 </Link>
+                <Link href="/review-queue" className="btn btn-ghost h-9 px-3">
+                  復習
+                </Link>
               </nav>
             </div>
 
