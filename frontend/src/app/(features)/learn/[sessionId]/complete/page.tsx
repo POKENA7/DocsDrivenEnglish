@@ -1,6 +1,6 @@
 import SessionCompletePage from "../../_components/SessionCompletePage";
 
-import { getSessionSnapshot } from "@/app/(features)/learn/_api/query";
+import { getSessionSnapshot } from "@/server/quiz/query";
 
 type Params = {
   sessionId: string;

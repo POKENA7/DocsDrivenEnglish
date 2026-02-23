@@ -6,7 +6,7 @@ import { getOptionalDb } from "@/db/client";
 import { questions as questionsTable, reviewQueue } from "@/db/schema";
 import { and, count, eq, lte } from "drizzle-orm";
 
-export type ReviewQueueDisplayItem = {
+type ReviewQueueDisplayItem = {
   questionId: string;
   prompt: string;
   nextReviewAt: number;

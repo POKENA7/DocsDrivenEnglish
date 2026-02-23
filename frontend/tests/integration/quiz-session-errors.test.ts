@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { ApiError, startQuizSession } from "@/app/(features)/learn/_api/mutations";
+import { ApiError } from "@/server/quiz/errors";
+import { startQuizSession } from "@/server/quiz/session";
 
 vi.mock("@/lib/openaiClient", () => ({
   OPENAI_MAX_OUTPUT_TOKENS: 10,

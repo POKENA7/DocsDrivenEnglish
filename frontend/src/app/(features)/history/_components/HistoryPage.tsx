@@ -1,7 +1,9 @@
-import { getHistorySummaryQuery } from "../_api/query";
+import { requireUserId } from "@/lib/auth";
+import { getHistorySummaryQuery } from "@/server/history/query";
 
 export default async function HistoryPage() {
-  const summary = await getHistorySummaryQuery();
+  const userId = await requireUserId();
+  const summary = await getHistorySummaryQuery(userId);
 
   const correctRatePercent = Math.round(summary.correctRate * 100);
 

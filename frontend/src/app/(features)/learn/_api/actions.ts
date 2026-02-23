@@ -6,12 +6,9 @@ import { auth } from "@clerk/nextjs/server";
 
 import { requireUserId } from "@/lib/auth";
 
-import {
-  startQuizSession,
-  submitQuizAnswer,
-  type SubmitAnswerInput,
-  type SubmitAnswerResponse,
-} from "./mutations";
+import { startQuizSession } from "@/server/quiz/session";
+import { submitQuizAnswer } from "@/server/quiz/answer";
+import type { SubmitAnswerInput, SubmitAnswerResponse } from "@/server/quiz/types";
 
 export async function startSessionFormAction(formData: FormData): Promise<void> {
   const topic = String(formData.get("topic") ?? "")

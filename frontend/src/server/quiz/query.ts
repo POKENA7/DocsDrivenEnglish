@@ -1,10 +1,10 @@
 import "server-only";
 
-import { createDb, getOptionalDb } from "@/db/client";
+import { type createDb, getOptionalDb } from "@/db/client";
 import { questions as questionsTable, studySessions } from "@/db/schema";
 import { eq } from "drizzle-orm";
 
-import type { QuestionRecord, SessionRecord } from "../_types";
+import type { QuestionRecord, SessionRecord } from "./types";
 
 export async function getQuestion(
   db: ReturnType<typeof createDb> | null,

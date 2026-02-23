@@ -10,6 +10,23 @@ const compat = new FlatCompat({ baseDirectory: __dirname });
 const eslintConfig = defineConfig([
   ...compat.extends("next/core-web-vitals", "next/typescript", "prettier"),
 
+  // feature 間の直接 import を禁止し、@/server/* を経由させる
+  {
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: ["@/app/(features)/history/**", "@/app/(features)/review-queue/**"],
+              message: "feature 間の直接 import は禁止。@/server/* を使うこと。",
+            },
+          ],
+        },
+      ],
+    },
+  },
+
   // Override default ignores of eslint-config-next.
   globalIgnores([
     // Default ignores of eslint-config-next:

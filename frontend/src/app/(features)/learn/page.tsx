@@ -1,6 +1,6 @@
 import { auth } from "@clerk/nextjs/server";
 
-import { getDueReviewCount } from "@/app/(features)/review-queue/_api/query";
+import { getDueReviewCount } from "@/server/review/query";
 
 import LearnPage from "./_components/LearnPage";
 
