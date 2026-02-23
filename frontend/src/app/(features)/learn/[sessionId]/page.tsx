@@ -1,6 +1,6 @@
 import SessionPage from "../_components/SessionPage";
 
-import { getSessionSnapshot } from "@/app/(features)/learn/_api/mutations";
+import { getSessionSnapshot } from "@/app/(features)/learn/_api/query";
 
 type Params = {
   sessionId: string;
