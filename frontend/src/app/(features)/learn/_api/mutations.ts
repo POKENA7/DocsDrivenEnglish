@@ -2,13 +2,16 @@ import "server-only";
 
 import { z } from "zod";
 
-import { createDb, getOptionalDb } from "@/db/client";
+import { type createDb, getOptionalDb } from "@/db/client";
 import { questions as questionsTable, reviewQueue, studySessions } from "@/db/schema";
 import { and, eq, lte, sql } from "drizzle-orm";
 
 import { createOpenAIParsedText } from "@/lib/openaiClient";
 
 import { recordAttempt } from "@/app/(features)/history/_api/mutations";
+
+import { getQuestion } from "./query";
+import type { Mode, QuestionRecord, SessionRecord } from "../_types";
 
 export class ApiError extends Error {
   readonly code: string;
@@ -18,8 +21,6 @@ export class ApiError extends Error {
     this.code = code;
   }
 }
-
-type Mode = "word" | "reading";
 
 export type StartSessionResponse = {
   sessionId: string;
@@ -45,26 +46,6 @@ export type SubmitAnswerInput = {
   sessionId: string;
   questionId: string;
   selectedIndex: number;
-};
-
-type QuestionRecord = {
-  questionId: string;
-  sessionId: string;
-  prompt: string;
-  choices: string[];
-  correctIndex: number;
-  explanation: string;
-  // 復習問題の複製元 questionId（通常問題は undefined）
-  sourceQuestionId?: string;
-};
-
-type SessionRecord = {
-  sessionId: string;
-  topic: string;
-  mode: Mode;
-  plannedCount: number;
-  actualCount: number;
-  questions: QuestionRecord[];
 };
 
 const STRUCTURED_OUTPUTS_MODEL = "gpt-5-mini";
@@ -101,69 +82,6 @@ async function persistSession(
       createdAt: now,
     })),
   );
-}
-
-async function getQuestion(
-  db: ReturnType<typeof createDb> | null,
-  questionId: string,
-): Promise<QuestionRecord | null> {
-  if (!db) return null;
-
-  const rows = await db
-    .select()
-    .from(questionsTable)
-    .where(eq(questionsTable.questionId, questionId))
-    .limit(1);
-
-  const row = rows[0];
-  if (!row) return null;
-
-  return {
-    questionId: row.questionId,
-    sessionId: row.sessionId,
-    prompt: row.prompt,
-    choices: JSON.parse(row.choicesJson) as string[],
-    correctIndex: row.correctIndex,
-    explanation: row.explanation,
-    sourceQuestionId: row.sourceQuestionId ?? undefined,
-  };
-}
-
-export async function getSessionSnapshot(sessionId: string): Promise<SessionRecord | null> {
-  const db = getOptionalDb();
-  if (!db) return null;
-
-  const sessionRows = await db
-    .select()
-    .from(studySessions)
-    .where(eq(studySessions.sessionId, sessionId))
-    .limit(1);
-
-  const session = sessionRows[0];
-  if (!session) return null;
-
-  const questionRows = await db
-    .select()
-    .from(questionsTable)
-    .where(eq(questionsTable.sessionId, sessionId));
-
-  const questions: QuestionRecord[] = questionRows.map((q) => ({
-    questionId: q.questionId,
-    sessionId: q.sessionId,
-    prompt: q.prompt,
-    choices: JSON.parse(q.choicesJson) as string[],
-    correctIndex: q.correctIndex,
-    explanation: q.explanation,
-  }));
-
-  return {
-    sessionId: session.sessionId,
-    topic: session.topic,
-    mode: session.mode as Mode,
-    plannedCount: session.plannedCount,
-    actualCount: session.actualCount,
-    questions,
-  };
 }
 
 type GeneratedQuizItem = {
