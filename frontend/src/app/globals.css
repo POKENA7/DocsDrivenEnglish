@@ -237,7 +237,7 @@
   }
 
   .btn-destructive {
-    @apply bg-destructive text-destructive-foreground;
+    @apply bg-destructive text-white;
     @apply hover:opacity-95 active:opacity-90;
   }
 
