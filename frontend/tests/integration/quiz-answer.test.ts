@@ -113,4 +113,64 @@ describe("submitQuizAnswer", () => {
     expect(typeof result.isCorrect).toBe("boolean");
     expect(typeof result.explanation).toBe("string");
   });
+
+  it("正解インデックスを渡すと isCorrect: true を返す", async () => {
+    const session = await startQuizSession({
+      topic: "React Hooks",
+      mode: "word",
+      userId: "test-user-id",
+    });
+
+    const first = session.questions[0]!;
+
+    // mock LLM は correctIndex: 0 を返すので selectedIndex: 0 は正解
+    const result = await submitQuizAnswer({
+      sessionId: session.sessionId,
+      questionId: first.questionId,
+      selectedIndex: 0,
+      userId: "test-user-id",
+    });
+
+    expect(result.isCorrect).toBe(true);
+  });
+
+  it("不正解インデックスを渡すと isCorrect: false を返す", async () => {
+    const session = await startQuizSession({
+      topic: "React Hooks",
+      mode: "word",
+      userId: "test-user-id",
+    });
+
+    const first = session.questions[0]!;
+
+    // mock LLM は correctIndex: 0 を返すので selectedIndex: 1 は不正解
+    const result = await submitQuizAnswer({
+      sessionId: session.sessionId,
+      questionId: first.questionId,
+      selectedIndex: 1,
+      userId: "test-user-id",
+    });
+
+    expect(result.isCorrect).toBe(false);
+  });
+
+  it("selectedIndex が文字列型で渡されても正誤判定が正しく動作する（型強制バグの修正確認）", async () => {
+    const session = await startQuizSession({
+      topic: "React Hooks",
+      mode: "word",
+      userId: "test-user-id",
+    });
+
+    const first = session.questions[0]!;
+
+    // Cloudflare Workers 環境で selectedIndex が "0" (string) として届くケースを再現
+    const result = await submitQuizAnswer({
+      sessionId: session.sessionId,
+      questionId: first.questionId,
+      selectedIndex: "0" as unknown as number,
+      userId: "test-user-id",
+    });
+
+    expect(result.isCorrect).toBe(true);
+  });
 });

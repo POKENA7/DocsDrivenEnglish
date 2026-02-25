@@ -19,7 +19,8 @@ export async function submitQuizAnswer(
     throw new ApiError("BAD_REQUEST", "問題が見つかりませんでした");
   }
 
-  const isCorrect = input.selectedIndex === q.correctIndex;
+  // Cloudflare Workers 経由で selectedIndex が文字列として届く場合を考慮して Number() で変換する
+  const isCorrect = Number(input.selectedIndex) === q.correctIndex;
 
   if (input.userId) {
     await recordAttempt({
