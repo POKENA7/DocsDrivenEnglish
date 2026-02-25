@@ -19,6 +19,8 @@ const config: KnipConfig = {
     "tailwindcss",
     "tw-animate-css",
   ],
+  // shadcn/ui の自動生成ファイルは一部エクスポートが使われない場合がある
+  ignore: ["src/components/ui/**"],
 };
 
 export default config;

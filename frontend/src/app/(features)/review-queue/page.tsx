@@ -2,6 +2,7 @@ import { auth } from "@clerk/nextjs/server";
 
 import { getReviewQueue } from "@/server/review/query";
 import { retryReviewItemAction } from "./_api/actions";
+import { DeleteReviewItemButton } from "./_components/DeleteReviewItemButton";
 
 function formatDate(ms: number): string {
   return new Date(ms).toLocaleDateString("ja-JP", {
@@ -62,15 +63,18 @@ export default async function ReviewQueuePage() {
                     不正解回数: {item.wrongCount}　次回: 今日
                   </p>
                 </div>
-                <form action={retryReviewItemAction}>
-                  <input type="hidden" name="questionId" value={item.questionId} />
-                  <button
-                    type="submit"
-                    className="btn btn-secondary shrink-0 whitespace-nowrap text-xs"
-                  >
-                    再度解く
-                  </button>
-                </form>
+                <div className="flex shrink-0 gap-2">
+                  <form action={retryReviewItemAction}>
+                    <input type="hidden" name="questionId" value={item.questionId} />
+                    <button
+                      type="submit"
+                      className="btn btn-secondary shrink-0 whitespace-nowrap text-xs"
+                    >
+                      再度解く
+                    </button>
+                  </form>
+                  <DeleteReviewItemButton questionId={item.questionId} />
+                </div>
               </li>
             ))}
           </ul>
@@ -94,15 +98,18 @@ export default async function ReviewQueuePage() {
                     不正解回数: {item.wrongCount}　次回: {formatDate(item.nextReviewAt)}
                   </p>
                 </div>
-                <form action={retryReviewItemAction}>
-                  <input type="hidden" name="questionId" value={item.questionId} />
-                  <button
-                    type="submit"
-                    className="btn btn-secondary shrink-0 whitespace-nowrap text-xs"
-                  >
-                    再度解く
-                  </button>
-                </form>
+                <div className="flex shrink-0 gap-2">
+                  <form action={retryReviewItemAction}>
+                    <input type="hidden" name="questionId" value={item.questionId} />
+                    <button
+                      type="submit"
+                      className="btn btn-secondary shrink-0 whitespace-nowrap text-xs"
+                    >
+                      再度解く
+                    </button>
+                  </form>
+                  <DeleteReviewItemButton questionId={item.questionId} />
+                </div>
               </li>
             ))}
           </ul>
