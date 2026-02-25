@@ -8,7 +8,13 @@ import { requireUserId } from "@/lib/auth";
 
 import { startQuizSession } from "@/server/quiz/session";
 import { submitQuizAnswer } from "@/server/quiz/answer";
-import type { SubmitAnswerInput, SubmitAnswerResponse } from "@/server/quiz/types";
+import { fetchMoreExplanation } from "@/server/quiz/moreExplanation";
+import type {
+  SubmitAnswerInput,
+  SubmitAnswerResponse,
+  MoreExplanationInput,
+  MoreExplanationResponse,
+} from "@/server/quiz/types";
 
 export async function startSessionFormAction(formData: FormData): Promise<void> {
   const topic = String(formData.get("topic") ?? "")
@@ -64,4 +70,10 @@ export async function submitQuizAnswerAction(
     selectedIndex: Number(input.selectedIndex),
     userId: userId ?? undefined,
   });
+}
+
+export async function fetchMoreExplanationAction(
+  input: MoreExplanationInput,
+): Promise<MoreExplanationResponse> {
+  return fetchMoreExplanation(input);
 }
