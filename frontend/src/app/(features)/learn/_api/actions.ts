@@ -57,5 +57,11 @@ export async function submitQuizAnswerAction(
   input: SubmitAnswerInput,
 ): Promise<SubmitAnswerResponse> {
   const { userId } = await auth();
-  return submitQuizAnswer({ ...input, userId: userId ?? undefined });
+  // Cloudflare Workers 環境では Server Action の数値引数が文字列として届く場合があるため、
+  // 明示的に数値へ変換してから渡す。
+  return submitQuizAnswer({
+    ...input,
+    selectedIndex: Number(input.selectedIndex),
+    userId: userId ?? undefined,
+  });
 }
