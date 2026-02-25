@@ -66,7 +66,7 @@ export default async function ReviewQueuePage() {
                   <input type="hidden" name="questionId" value={item.questionId} />
                   <button
                     type="submit"
-                    className="btn-secondary shrink-0 whitespace-nowrap text-xs"
+                    className="btn btn-secondary shrink-0 whitespace-nowrap text-xs"
                   >
                     再度解く
                   </button>
@@ -98,7 +98,7 @@ export default async function ReviewQueuePage() {
                   <input type="hidden" name="questionId" value={item.questionId} />
                   <button
                     type="submit"
-                    className="btn-secondary shrink-0 whitespace-nowrap text-xs"
+                    className="btn btn-secondary shrink-0 whitespace-nowrap text-xs"
                   >
                     再度解く
                   </button>
