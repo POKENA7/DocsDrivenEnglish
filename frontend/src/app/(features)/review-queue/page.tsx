@@ -1,6 +1,6 @@
 import { auth } from "@clerk/nextjs/server";
 
-import { getReviewQueue } from "./_api/query";
+import { getReviewQueue } from "@/server/review/query";
 
 function formatDate(ms: number): string {
   return new Date(ms).toLocaleDateString("ja-JP", {

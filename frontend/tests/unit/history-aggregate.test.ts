@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { calculateHistorySummary } from "@/app/(features)/history/_api/query";
+import { calculateHistorySummary } from "@/server/history/query";
 
 describe("calculateHistorySummary", () => {
   it("counts distinct study days", () => {
