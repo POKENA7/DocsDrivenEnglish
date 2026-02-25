@@ -1,14 +1,19 @@
 import "server-only";
 
 import { type createDb, getOptionalDb } from "@/db/client";
-import { questions as questionsTable, reviewQueue, studySessions } from "@/db/schema";
+import {
+  questions as questionsTable,
+  reviewQueue,
+  sharedQuestions,
+  studySessions,
+} from "@/db/schema";
 import { and, eq, lte } from "drizzle-orm";
 
 import { generateQuizItemsFromTopic } from "./generate";
 import { ApiError } from "./errors";
 import type { Mode, QuestionRecord, SessionRecord, StartSessionResponse } from "./types";
 
-async function persistSession(
+export async function persistSession(
   db: ReturnType<typeof createDb> | null,
   session: SessionRecord,
 ): Promise<void> {
@@ -123,6 +128,26 @@ export async function startQuizSession(input: {
   };
 
   await persistSession(db, session);
+
+  // 新規 AI 生成問題を shared_questions に保存（復習問題は除外）
+  if (db && newQuestions.length > 0) {
+    const normalizedTopic = topic.toLowerCase();
+    await db.insert(sharedQuestions).values(
+      newQuestions.map((q) => ({
+        id: crypto.randomUUID(),
+        topic: normalizedTopic,
+        mode: input.mode,
+        prompt: q.prompt,
+        choicesJson: JSON.stringify(q.choices),
+        correctIndex: q.correctIndex,
+        explanation: q.explanation,
+        createdBy: input.userId,
+        sourceSessionId: sessionId,
+        playCount: 0,
+        createdAt: new Date(),
+      })),
+    );
+  }
 
   return {
     sessionId,

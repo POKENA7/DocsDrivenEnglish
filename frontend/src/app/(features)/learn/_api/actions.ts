@@ -7,6 +7,7 @@ import { auth } from "@clerk/nextjs/server";
 import { requireUserId } from "@/lib/auth";
 
 import { startQuizSession } from "@/server/quiz/session";
+import { startSharedQuizSession } from "@/server/quiz/shared-session";
 import { submitQuizAnswer } from "@/server/quiz/answer";
 import type { SubmitAnswerInput, SubmitAnswerResponse } from "@/server/quiz/types";
 
@@ -36,6 +37,31 @@ export async function startSessionFormAction(formData: FormData): Promise<void> 
     mode: mode as "word" | "reading",
     questionCount,
     reviewQuestionCount,
+    userId,
+  });
+  redirect(`/learn/${session.sessionId}`);
+}
+
+export async function startSharedSessionFormAction(formData: FormData): Promise<void> {
+  const topic = String(formData.get("topic") ?? "")
+    .trim()
+    .slice(0, 200);
+  const mode = String(formData.get("mode") ?? "word");
+  const questionCountRaw = Number(formData.get("questionCount") ?? 10);
+  const questionCount =
+    Number.isInteger(questionCountRaw) && questionCountRaw >= 1 && questionCountRaw <= 20
+      ? questionCountRaw
+      : 10;
+
+  if (!topic) return;
+  if (mode !== "word" && mode !== "reading") return;
+
+  const userId = await requireUserId();
+
+  const session = await startSharedQuizSession({
+    topic,
+    mode: mode as "word" | "reading",
+    questionCount,
     userId,
   });
   redirect(`/learn/${session.sessionId}`);

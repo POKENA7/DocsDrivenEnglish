@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-import { startSessionFormAction } from "../_api/actions";
+import { startSessionFormAction, startSharedSessionFormAction } from "../_api/actions";
 
 import SubmitButton from "./SubmitButton";
 
@@ -121,6 +121,19 @@ export default function LearnPage({ dueCount }: { dueCount: number }) {
           <div className="mt-6 flex items-center gap-3">
             <SubmitButton />
             <p className="text-xs text-muted-foreground">{questionCount}問のクイズが始まります</p>
+          </div>
+
+          <div className="mt-4 flex items-center gap-3 border-t pt-4">
+            <span className="text-xs text-muted-foreground">または</span>
+          </div>
+          <div className="mt-3">
+            <button
+              type="submit"
+              formAction={startSharedSessionFormAction}
+              className="btn btn-secondary w-full"
+            >
+              他のユーザーが作成したクイズを解く
+            </button>
           </div>
         </section>
       </form>

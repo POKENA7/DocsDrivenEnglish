@@ -1,5 +1,19 @@
 import { integer, sqliteTable, text, unique } from "drizzle-orm/sqlite-core";
 
+export const sharedQuestions = sqliteTable("shared_questions", {
+  id: text("id").primaryKey(),
+  topic: text("topic").notNull(),
+  mode: text("mode").notNull(),
+  prompt: text("prompt").notNull(),
+  choicesJson: text("choices_json").notNull(),
+  correctIndex: integer("correct_index").notNull(),
+  explanation: text("explanation").notNull(),
+  createdBy: text("created_by"),
+  sourceSessionId: text("source_session_id"),
+  playCount: integer("play_count").notNull().default(0),
+  createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
+});
+
 export const studySessions = sqliteTable("study_sessions", {
   sessionId: text("session_id").primaryKey(),
   userId: text("user_id"),
