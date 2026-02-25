@@ -47,3 +47,13 @@ export type SubmitAnswerResponse = {
   isReviewRegistered?: boolean;
   reviewNextAt?: number;
 };
+
+export type MoreExplanationInput = {
+  questionId: string;
+  prompt: string;
+  explanation: string;
+};
+
+export type MoreExplanationResponse = {
+  moreExplanation: string;
+};

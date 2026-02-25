@@ -1,6 +1,9 @@
 "use client";
 
+import { useEffect } from "react";
+
 import { useQuizSession, type SessionSnapshot } from "../_hooks/useQuizSession";
+import { useMoreExplanation } from "../_hooks/useMoreExplanation";
 
 import SessionProgress from "./SessionProgress";
 
@@ -17,6 +20,12 @@ export default function SessionPage({ session }: { session: SessionSnapshot }) {
     submit,
     next,
   } = useQuizSession(session);
+  const { moreExplanation, isFetching, error, fetch: fetchMore, reset } = useMoreExplanation();
+
+  useEffect(() => {
+    reset();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [current.questionId]);
 
   return (
     <main className="container-page page">
@@ -116,6 +125,36 @@ export default function SessionPage({ session }: { session: SessionSnapshot }) {
             <p className="mt-3 whitespace-pre-line text-sm leading-relaxed text-muted-foreground">
               {result.explanation}
             </p>
+
+            {moreExplanation ? (
+              <>
+                <hr className="my-3 border-border" />
+                <p className="text-xs font-semibold tracking-tight text-muted-foreground">
+                  より詳しい解説
+                </p>
+                <p className="mt-2 whitespace-pre-line text-sm leading-relaxed text-muted-foreground">
+                  {moreExplanation}
+                </p>
+              </>
+            ) : (
+              <div className="mt-3">
+                {error && <p className="mb-2 text-xs text-destructive">{error}</p>}
+                <button
+                  type="button"
+                  className="btn btn-secondary text-xs"
+                  onClick={() =>
+                    fetchMore({
+                      questionId: current.questionId,
+                      prompt: current.prompt,
+                      explanation: result.explanation,
+                    })
+                  }
+                  disabled={isFetching}
+                >
+                  {isFetching ? "取得中..." : "もっと解説"}
+                </button>
+              </div>
+            )}
           </div>
         ) : null}
 

@@ -112,3 +112,38 @@ export async function createOpenAIParsedText<TSchema extends z.ZodTypeAny>(
     clearTimeout(timeoutId);
   }
 }
+
+export async function createOpenAIText(
+  systemPrompt: string,
+  userPrompt: string,
+  model: string,
+  options?: { maxOutputTokens?: number },
+): Promise<string> {
+  const maxOutputTokens = options?.maxOutputTokens ?? OPENAI_MAX_OUTPUT_TOKENS;
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), OPENAI_TIMEOUT_MS);
+
+  try {
+    const response = await getOpenAIClient().responses.create(
+      {
+        model,
+        input: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt },
+        ],
+        max_output_tokens: maxOutputTokens,
+      },
+      { signal: controller.signal },
+    );
+
+    console.log("[openai] createOpenAIText response = ", {
+      model: response.model,
+      responseId: response.id,
+    });
+
+    return response.output_text;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
