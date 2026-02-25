@@ -236,6 +236,11 @@
     @apply hover:bg-muted/60;
   }
 
+  .btn-destructive {
+    @apply bg-destructive text-destructive-foreground;
+    @apply hover:opacity-95 active:opacity-90;
+  }
+
   .input {
     @apply h-10 w-full rounded-xl border bg-background px-3 text-sm;
     @apply shadow-sm;
