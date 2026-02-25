@@ -4,7 +4,7 @@ import { createOpenAIText } from "@/lib/openaiClient";
 
 import type { MoreExplanationInput, MoreExplanationResponse } from "./types";
 
-const MODEL = "gpt-4o-mini";
+const MODEL = "gpt-5-mini";
 
 const SYSTEM_PROMPT = `
 あなたは英語と技術の両方に精通した学習サポーターです。

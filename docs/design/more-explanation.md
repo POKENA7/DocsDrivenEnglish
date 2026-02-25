@@ -136,7 +136,7 @@ import "server-only";
 import { createOpenAIText } from "@/lib/openaiClient";
 import type { MoreExplanationInput, MoreExplanationResponse } from "./types";
 
-const MODEL = "gpt-4o-mini";
+const MODEL = "gpt-5-mini";
 
 export async function fetchMoreExplanation(
   input: MoreExplanationInput,
@@ -212,7 +212,7 @@ useEffect(() => {
 
 | 項目 | 方針 |
 |------|------|
-| モデル | `gpt-4o-mini`（低コスト） |
+| モデル | `gpt-5-mini`（低コスト） |
 | トークン上限 | `maxOutputTokens: 400` で上限設定 |
 | 呼び出しタイミング | ユーザーが明示的にボタンを押したときのみ（自動取得なし） |
 | 1問あたりの上限 | Hook 内で「取得済みは再取得しない」制御を実装済み |
