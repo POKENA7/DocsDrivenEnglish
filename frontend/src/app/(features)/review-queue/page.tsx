@@ -64,7 +64,10 @@ export default async function ReviewQueuePage() {
                 </div>
                 <form action={retryReviewItemAction}>
                   <input type="hidden" name="questionId" value={item.questionId} />
-                  <button type="submit" className="btn-secondary shrink-0 text-xs">
+                  <button
+                    type="submit"
+                    className="btn-secondary shrink-0 whitespace-nowrap text-xs"
+                  >
                     再度解く
                   </button>
                 </form>
@@ -93,7 +96,10 @@ export default async function ReviewQueuePage() {
                 </div>
                 <form action={retryReviewItemAction}>
                   <input type="hidden" name="questionId" value={item.questionId} />
-                  <button type="submit" className="btn-secondary shrink-0 text-xs">
+                  <button
+                    type="submit"
+                    className="btn-secondary shrink-0 whitespace-nowrap text-xs"
+                  >
                     再度解く
                   </button>
                 </form>
