@@ -128,10 +128,8 @@ export async function createOpenAIText(
     const response = await getOpenAIClient().responses.create(
       {
         model,
-        input: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userPrompt },
-        ],
+        instructions: systemPrompt,
+        input: userPrompt,
         max_output_tokens: maxOutputTokens,
       },
       { signal: controller.signal },
