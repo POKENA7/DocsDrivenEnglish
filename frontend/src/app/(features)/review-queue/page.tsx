@@ -1,6 +1,7 @@
 import { auth } from "@clerk/nextjs/server";
 
 import { getReviewQueue } from "@/server/review/query";
+import { retryReviewItemAction } from "./_api/actions";
 
 function formatDate(ms: number): string {
   return new Date(ms).toLocaleDateString("ja-JP", {
@@ -51,11 +52,25 @@ export default async function ReviewQueuePage() {
           </p>
           <ul className="space-y-2">
             {dueItems.map((item) => (
-              <li key={item.questionId} className="card-compact">
-                <p className="text-sm font-medium">{extractLabel(item.prompt)}</p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  不正解回数: {item.wrongCount}　次回: 今日
-                </p>
+              <li
+                key={item.questionId}
+                className="card-compact flex items-start justify-between gap-4"
+              >
+                <div>
+                  <p className="text-sm font-medium">{extractLabel(item.prompt)}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    不正解回数: {item.wrongCount}　次回: 今日
+                  </p>
+                </div>
+                <form action={retryReviewItemAction}>
+                  <input type="hidden" name="questionId" value={item.questionId} />
+                  <button
+                    type="submit"
+                    className="btn btn-secondary shrink-0 whitespace-nowrap text-xs"
+                  >
+                    再度解く
+                  </button>
+                </form>
               </li>
             ))}
           </ul>
@@ -69,11 +84,25 @@ export default async function ReviewQueuePage() {
           </p>
           <ul className="space-y-2">
             {upcomingItems.map((item) => (
-              <li key={item.questionId} className="card-compact">
-                <p className="text-sm font-medium">{extractLabel(item.prompt)}</p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  不正解回数: {item.wrongCount}　次回: {formatDate(item.nextReviewAt)}
-                </p>
+              <li
+                key={item.questionId}
+                className="card-compact flex items-start justify-between gap-4"
+              >
+                <div>
+                  <p className="text-sm font-medium">{extractLabel(item.prompt)}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    不正解回数: {item.wrongCount}　次回: {formatDate(item.nextReviewAt)}
+                  </p>
+                </div>
+                <form action={retryReviewItemAction}>
+                  <input type="hidden" name="questionId" value={item.questionId} />
+                  <button
+                    type="submit"
+                    className="btn btn-secondary shrink-0 whitespace-nowrap text-xs"
+                  >
+                    再度解く
+                  </button>
+                </form>
               </li>
             ))}
           </ul>

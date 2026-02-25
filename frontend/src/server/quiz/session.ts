@@ -136,3 +136,50 @@ export async function startQuizSession(input: {
     })),
   };
 }
+
+export async function startSingleReviewSession(input: {
+  questionId: string;
+  userId: string;
+}): Promise<{ sessionId: string }> {
+  const db = getOptionalDb();
+  if (!db) throw new ApiError("INTERNAL", "DB接続に失敗しました");
+
+  const [row] = await db
+    .select({
+      prompt: questionsTable.prompt,
+      choicesJson: questionsTable.choicesJson,
+      correctIndex: questionsTable.correctIndex,
+      explanation: questionsTable.explanation,
+      topic: studySessions.topic,
+      mode: studySessions.mode,
+    })
+    .from(questionsTable)
+    .innerJoin(studySessions, eq(questionsTable.sessionId, studySessions.sessionId))
+    .where(eq(questionsTable.questionId, input.questionId))
+    .limit(1);
+
+  if (!row) throw new ApiError("NOT_FOUND", "問題が見つかりません");
+
+  const sessionId = crypto.randomUUID();
+
+  const question: QuestionRecord = {
+    questionId: crypto.randomUUID(),
+    sessionId,
+    prompt: row.prompt,
+    choices: JSON.parse(row.choicesJson) as [string, string, string, string],
+    correctIndex: row.correctIndex,
+    explanation: row.explanation,
+    sourceQuestionId: input.questionId,
+  };
+
+  await persistSession(db, {
+    sessionId,
+    topic: row.topic,
+    mode: row.mode as Mode,
+    plannedCount: 1,
+    actualCount: 1,
+    questions: [question],
+  });
+
+  return { sessionId };
+}
