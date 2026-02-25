@@ -40,7 +40,7 @@ ${input.explanation}
     MoreExplanationSchema,
     "more_explanation",
     {
-      maxOutputTokens: 400,
+      maxOutputTokens: 1024,
     },
   );
 
