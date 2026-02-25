@@ -24,8 +24,7 @@ export default function SessionPage({ session }: { session: SessionSnapshot }) {
 
   useEffect(() => {
     reset();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [current.questionId]);
+  }, [current.questionId, reset]);
 
   return (
     <main className="container-page page">

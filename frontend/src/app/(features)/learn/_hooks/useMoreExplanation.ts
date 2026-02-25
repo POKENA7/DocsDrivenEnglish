@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 
 import { fetchMoreExplanationAction } from "../_api/actions";
 import type { MoreExplanationInput } from "@/server/quiz/types";
@@ -8,10 +8,10 @@ export function useMoreExplanation() {
   const [isFetching, setIsFetching] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  function reset() {
+  const reset = useCallback(() => {
     setMoreExplanation(null);
     setError(null);
-  }
+  }, []);
 
   async function fetch(input: MoreExplanationInput) {
     if (moreExplanation !== null) return;
