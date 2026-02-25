@@ -1,6 +1,8 @@
 import "server-only";
 
-import { createOpenAIText } from "@/lib/openaiClient";
+import { z } from "zod";
+
+import { createOpenAIParsedText } from "@/lib/openaiClient";
 
 import type { MoreExplanationInput, MoreExplanationResponse } from "./types";
 
@@ -15,22 +17,32 @@ const SYSTEM_PROMPT = `
 箇条書きは避け、自然な文章で書いてください。
 `.trim();
 
+const MoreExplanationSchema = z.object({
+  moreExplanation: z.string(),
+});
+
 export async function fetchMoreExplanation(
   input: MoreExplanationInput,
 ): Promise<MoreExplanationResponse> {
-  const userPrompt = `
+  const prompt = `${SYSTEM_PROMPT}
+
 【問題】
 ${input.prompt}
 
 【通常解説】
 ${input.explanation}
 
-上記を踏まえて、より詳しい解説をお願いします。
-`.trim();
+上記を踏まえて、より詳しい解説をお願いします。`;
 
-  const moreExplanation = await createOpenAIText(SYSTEM_PROMPT, userPrompt, MODEL, {
-    maxOutputTokens: 400,
-  });
+  const parsed = await createOpenAIParsedText(
+    prompt,
+    MODEL,
+    MoreExplanationSchema,
+    "more_explanation",
+    {
+      maxOutputTokens: 400,
+    },
+  );
 
-  return { moreExplanation };
+  return { moreExplanation: parsed.moreExplanation };
 }
