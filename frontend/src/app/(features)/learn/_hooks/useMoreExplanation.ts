@@ -1,17 +1,17 @@
-import { useCallback, useState } from "react";
+import { useEffect, useState } from "react";
 
 import { fetchMoreExplanationAction } from "../_api/actions";
 import type { MoreExplanationInput } from "@/server/quiz/types";
 
-export function useMoreExplanation() {
+export function useMoreExplanation(questionId: string) {
   const [moreExplanation, setMoreExplanation] = useState<string | null>(null);
   const [isFetching, setIsFetching] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const reset = useCallback(() => {
+  useEffect(() => {
     setMoreExplanation(null);
     setError(null);
-  }, []);
+  }, [questionId]);
 
   async function fetch(input: MoreExplanationInput) {
     if (moreExplanation !== null) return;
@@ -27,5 +27,5 @@ export function useMoreExplanation() {
     }
   }
 
-  return { moreExplanation, isFetching, error, fetch, reset };
+  return { moreExplanation, isFetching, error, fetch };
 }

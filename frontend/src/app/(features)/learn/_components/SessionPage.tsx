@@ -1,7 +1,5 @@
 "use client";
 
-import { useEffect } from "react";
-
 import { useQuizSession, type SessionSnapshot } from "../_hooks/useQuizSession";
 import { useMoreExplanation } from "../_hooks/useMoreExplanation";
 
@@ -20,11 +18,12 @@ export default function SessionPage({ session }: { session: SessionSnapshot }) {
     submit,
     next,
   } = useQuizSession(session);
-  const { moreExplanation, isFetching, error, fetch: fetchMore, reset } = useMoreExplanation();
-
-  useEffect(() => {
-    reset();
-  }, [current.questionId, reset]);
+  const {
+    moreExplanation,
+    isFetching,
+    error,
+    fetch: fetchMore,
+  } = useMoreExplanation(current.questionId);
 
   return (
     <main className="container-page page">
