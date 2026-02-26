@@ -1,6 +1,9 @@
 import "server-only";
 
-export type Mode = "word" | "reading";
+import { z } from "zod";
+
+export const modeSchema = z.enum(["word", "reading"]);
+export type Mode = z.infer<typeof modeSchema>;
 
 export type QuestionRecord = {
   questionId: string;
