@@ -1,12 +1,15 @@
 import "server-only";
 
+import { notFound } from "next/navigation";
+
 import { getDb } from "@/db/client";
 import { questions as questionsTable, studySessions } from "@/db/schema";
 import { eq } from "drizzle-orm";
 
+import { ApiError } from "./errors";
 import type { QuestionRecord, SessionRecord } from "./types";
 
-export async function getQuestion(questionId: string): Promise<QuestionRecord | null> {
+export async function getQuestion(questionId: string): Promise<QuestionRecord> {
   const db = getDb();
 
   const rows = await db
@@ -16,7 +19,7 @@ export async function getQuestion(questionId: string): Promise<QuestionRecord | 
     .limit(1);
 
   const row = rows[0];
-  if (!row) return null;
+  if (!row) throw new ApiError("NOT_FOUND", "問題が見つかりませんでした");
 
   return {
     questionId: row.questionId,
@@ -29,7 +32,7 @@ export async function getQuestion(questionId: string): Promise<QuestionRecord | 
   };
 }
 
-export async function getSessionSnapshot(sessionId: string): Promise<SessionRecord | null> {
+export async function getSessionSnapshot(sessionId: string): Promise<SessionRecord> {
   const db = getDb();
 
   const sessionRows = await db
@@ -39,7 +42,7 @@ export async function getSessionSnapshot(sessionId: string): Promise<SessionReco
     .limit(1);
 
   const session = sessionRows[0];
-  if (!session) return null;
+  if (!session) notFound();
 
   const questionRows = await db
     .select()

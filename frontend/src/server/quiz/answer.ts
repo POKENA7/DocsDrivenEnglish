@@ -14,8 +14,8 @@ export async function submitQuizAnswer(
   input: SubmitAnswerInput & { userId?: string },
 ): Promise<SubmitAnswerResponse> {
   const q = await getQuestion(input.questionId);
-  if (!q || q.sessionId !== input.sessionId) {
-    throw new ApiError("BAD_REQUEST", "問題が見つかりませんでした");
+  if (q.sessionId !== input.sessionId) {
+    throw new ApiError("BAD_REQUEST", "セッションが一致しません");
   }
 
   // Cloudflare Workers 経由で selectedIndex が文字列として届く場合を考慮して Number() で変換する

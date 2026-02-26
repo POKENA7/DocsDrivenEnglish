@@ -14,13 +14,5 @@ export default async function LearnSessionPage({ params }: PageProps) {
   const { sessionId } = await params;
   const session = await getSessionSnapshot(sessionId);
 
-  if (!session) {
-    return (
-      <main className="mx-auto max-w-2xl px-6 py-10">
-        <p className="text-sm text-muted-foreground">セッションが見つかりませんでした。</p>
-      </main>
-    );
-  }
-
   return <SessionPage session={session} />;
 }
