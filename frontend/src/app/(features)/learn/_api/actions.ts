@@ -12,7 +12,13 @@ import { startQuizSession } from "@/server/quiz/session";
 import { startSharedQuizSession } from "@/server/quiz/shared-session";
 import { submitQuizAnswer } from "@/server/quiz/answer";
 import { ApiError } from "@/server/quiz/errors";
-import type { SubmitAnswerInput, SubmitAnswerResponse } from "@/server/quiz/types";
+import { fetchMoreExplanation } from "@/server/quiz/moreExplanation";
+import type {
+  SubmitAnswerInput,
+  SubmitAnswerResponse,
+  MoreExplanationInput,
+  MoreExplanationResponse,
+} from "@/server/quiz/types";
 
 /* ------------------------------------------------------------------ */
 /*  Zod スキーマ — FormData バリデーション                             */
@@ -117,4 +123,10 @@ export async function submitQuizAnswerAction(
     selectedIndex: Number(input.selectedIndex),
     userId: userId ?? undefined,
   });
+}
+
+export async function fetchMoreExplanationAction(
+  input: MoreExplanationInput,
+): Promise<MoreExplanationResponse> {
+  return fetchMoreExplanation(input);
 }
