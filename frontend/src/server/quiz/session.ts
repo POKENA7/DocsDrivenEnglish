@@ -8,7 +8,7 @@ import { generateQuizItemsFromTopic } from "./generate";
 import { ApiError } from "./errors";
 import type { Mode, QuestionRecord, SessionRecord, StartSessionResponse } from "./types";
 
-async function persistSession(
+export async function persistSession(
   db: ReturnType<typeof createDb> | null,
   session: SessionRecord,
 ): Promise<void> {

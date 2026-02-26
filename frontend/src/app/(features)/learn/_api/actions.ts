@@ -1,13 +1,17 @@
 "use server";
 
+import { isRedirectError } from "next/dist/client/components/redirect-error";
 import { redirect } from "next/navigation";
 
+import { z } from "zod";
 import { auth } from "@clerk/nextjs/server";
 
 import { requireUserId } from "@/lib/auth";
 
 import { startQuizSession } from "@/server/quiz/session";
+import { startSharedQuizSession } from "@/server/quiz/shared-session";
 import { submitQuizAnswer } from "@/server/quiz/answer";
+import { ApiError } from "@/server/quiz/errors";
 import { fetchMoreExplanation } from "@/server/quiz/moreExplanation";
 import type {
   SubmitAnswerInput,
@@ -16,46 +20,95 @@ import type {
   MoreExplanationResponse,
 } from "@/server/quiz/types";
 
-export async function startSessionFormAction(formData: FormData): Promise<void> {
-  const topic = String(formData.get("topic") ?? "")
-    .trim()
-    .slice(0, 200);
-  const mode = String(formData.get("mode") ?? "word");
-  const questionCountRaw = Number(formData.get("questionCount") ?? 10);
-  const questionCount =
-    Number.isInteger(questionCountRaw) && questionCountRaw >= 1 && questionCountRaw <= 20
-      ? questionCountRaw
-      : 10;
-  const reviewQuestionCountRaw = Number(formData.get("reviewQuestionCount") ?? 0);
-  const reviewQuestionCount =
-    Number.isInteger(reviewQuestionCountRaw) && reviewQuestionCountRaw >= 0
-      ? Math.min(reviewQuestionCountRaw, questionCount - 1)
-      : 0;
+/* ------------------------------------------------------------------ */
+/*  Zod スキーマ — FormData バリデーション                             */
+/* ------------------------------------------------------------------ */
 
-  if (!topic) return;
-  if (mode !== "word" && mode !== "reading") return;
+const modeSchema = z.enum(["word", "reading"]);
+const questionCountSchema = z.coerce.number().int().min(1).max(20).catch(10);
+const reviewQuestionCountSchema = z.coerce.number().int().min(0).catch(0);
+
+const startSessionInput = z
+  .object({
+    topic: z.string().trim().min(1).max(200),
+    mode: modeSchema,
+    questionCount: questionCountSchema,
+    reviewQuestionCount: reviewQuestionCountSchema,
+  })
+  .transform((d) => ({
+    ...d,
+    reviewQuestionCount: Math.min(d.reviewQuestionCount, d.questionCount - 1),
+  }));
+
+const sharedSessionInput = z
+  .object({
+    mode: modeSchema,
+    questionCount: questionCountSchema,
+    reviewQuestionCount: reviewQuestionCountSchema,
+  })
+  .transform((d) => ({
+    ...d,
+    reviewQuestionCount: Math.min(d.reviewQuestionCount, d.questionCount - 1),
+  }));
+
+const continueSessionInput = z.object({
+  topic: z.string().trim().min(1),
+  mode: modeSchema,
+});
+
+/* ------------------------------------------------------------------ */
+/*  Server Actions                                                     */
+/* ------------------------------------------------------------------ */
+
+export async function startSessionFormAction(formData: FormData): Promise<void> {
+  const parsed = startSessionInput.safeParse({
+    topic: formData.get("topic") ?? "",
+    mode: formData.get("mode") ?? "word",
+    questionCount: formData.get("questionCount") ?? 10,
+    reviewQuestionCount: formData.get("reviewQuestionCount") ?? 0,
+  });
+  if (!parsed.success) return;
 
   const userId = await requireUserId();
-
-  const session = await startQuizSession({
-    topic,
-    mode: mode as "word" | "reading",
-    questionCount,
-    reviewQuestionCount,
-    userId,
-  });
+  const session = await startQuizSession({ ...parsed.data, userId });
   redirect(`/learn/${session.sessionId}`);
 }
 
-export async function continueSessionFormAction(formData: FormData): Promise<void> {
-  const topic = String(formData.get("topic") ?? "").trim();
-  const mode = String(formData.get("mode") ?? "word");
-
-  if (!topic) return;
-  if (mode !== "word" && mode !== "reading") return;
+export async function startSharedSessionFormAction(
+  _prevState: { error: string | null },
+  formData: FormData,
+): Promise<{ error: string | null }> {
+  const parsed = sharedSessionInput.safeParse({
+    mode: formData.get("mode") ?? "word",
+    questionCount: formData.get("sharedQuestionCount") ?? 10,
+    reviewQuestionCount: formData.get("sharedReviewQuestionCount") ?? 0,
+  });
+  if (!parsed.success) return { error: null };
 
   const userId = await requireUserId();
-  const session = await startQuizSession({ topic, mode: mode as "word" | "reading", userId });
+
+  try {
+    const session = await startSharedQuizSession({ ...parsed.data, userId });
+    redirect(`/learn/${session.sessionId}`);
+  } catch (e) {
+    // redirect() は内部で特殊なエラーを throw するので再 throw する
+    if (isRedirectError(e)) throw e;
+    if (e instanceof ApiError && e.code === "NOT_FOUND") {
+      return { error: e.message };
+    }
+    throw e;
+  }
+}
+
+export async function continueSessionFormAction(formData: FormData): Promise<void> {
+  const parsed = continueSessionInput.safeParse({
+    topic: formData.get("topic") ?? "",
+    mode: formData.get("mode") ?? "word",
+  });
+  if (!parsed.success) return;
+
+  const userId = await requireUserId();
+  const session = await startQuizSession({ ...parsed.data, userId });
   redirect(`/learn/${session.sessionId}`);
 }
 
