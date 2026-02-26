@@ -8,12 +8,16 @@ import type { Mode } from "./types";
 
 const STRUCTURED_OUTPUTS_MODEL = "gpt-5-mini";
 
-type GeneratedQuizItem = {
-  prompt: string;
-  choices: string[];
-  correctIndex: 0 | 1 | 2 | 3;
-  explanation: string;
-};
+const quizItemSchema = z.object({
+  prompt: z.string(),
+  // NOTE: OpenAI Structured Outputs は JSON Schema の tuple 表現（items が配列）を受け付けないため、
+  // 「配列 + min/max=4」で表現する。
+  choices: z.array(z.string()).min(4).max(4),
+  correctIndex: z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3)]),
+  explanation: z.string(),
+});
+
+type GeneratedQuizItem = z.infer<typeof quizItemSchema>;
 
 export async function generateQuizItemsFromTopic(
   topic: string,
@@ -26,19 +30,7 @@ export async function generateQuizItemsFromTopic(
   console.log("[quiz] generating quiz items, topic = ", { topic: trimmedTopic, questionCount });
 
   const QuizItemsSchema = z.object({
-    items: z
-      .array(
-        z.object({
-          prompt: z.string(),
-          // NOTE: OpenAI Structured Outputs は JSON Schema の tuple 表現（items が配列）を受け付けないため、
-          // 「配列 + min/max=4」で表現する。
-          choices: z.array(z.string()).min(4).max(4),
-          correctIndex: z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3)]),
-          explanation: z.string(),
-        }),
-      )
-      .min(1)
-      .max(questionCount),
+    items: z.array(quizItemSchema).min(1).max(questionCount),
   });
 
   const base =

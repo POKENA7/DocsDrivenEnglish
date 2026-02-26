@@ -1,9 +1,8 @@
 import "server-only";
 
-import { z } from "zod";
-
 import { createOpenAIParsedText } from "@/lib/openaiClient";
 
+import { moreExplanationResponseSchema } from "./types";
 import type { MoreExplanationInput, MoreExplanationResponse } from "./types";
 
 const MODEL = "gpt-5-mini";
@@ -16,10 +15,6 @@ const SYSTEM_PROMPT = `
 - 技術的な観点（背景知識・実際の使われ方・注意点）
 箇条書きは避け、自然な文章で書いてください。
 `.trim();
-
-const MoreExplanationSchema = z.object({
-  moreExplanation: z.string(),
-});
 
 export async function fetchMoreExplanation(
   input: MoreExplanationInput,
@@ -37,7 +32,7 @@ ${input.explanation}
   const parsed = await createOpenAIParsedText(
     prompt,
     MODEL,
-    MoreExplanationSchema,
+    moreExplanationResponseSchema,
     "more_explanation",
     {
       maxOutputTokens: 2048,
