@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import type { Mode } from "@/server/quiz/types";
 import { continueSessionFormAction } from "../_api/actions";
 
 import ContinueButton from "./ContinueButton";
@@ -7,7 +8,7 @@ import ContinueButton from "./ContinueButton";
 export default function SessionCompletePage(props: {
   sessionId: string;
   topic: string | null;
-  mode: "word" | "reading" | null;
+  mode: Mode | null;
 }) {
   return (
     <main className="container-page page">
