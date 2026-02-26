@@ -173,4 +173,35 @@ describe("submitQuizAnswer", () => {
 
     expect(result.isCorrect).toBe(true);
   });
+
+  it("存在しない questionId を渡すと NOT_FOUND エラーを投げる", async () => {
+    // questionStore が空の状態（beforeEach で clear 済み）で呼び出す
+    await expect(
+      submitQuizAnswer({
+        sessionId: "some-session-id",
+        questionId: "non-existent-question-id",
+        selectedIndex: 0,
+        userId: "test-user-id",
+      }),
+    ).rejects.toMatchObject({ code: "NOT_FOUND" });
+  });
+
+  it("questionId と sessionId が不一致の場合は BAD_REQUEST エラーを投げる", async () => {
+    const session = await startQuizSession({
+      topic: "React Hooks",
+      mode: "word",
+      userId: "test-user-id",
+    });
+
+    const first = session.questions[0]!;
+
+    await expect(
+      submitQuizAnswer({
+        sessionId: "wrong-session-id",
+        questionId: first.questionId,
+        selectedIndex: 0,
+        userId: "test-user-id",
+      }),
+    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+  });
 });
