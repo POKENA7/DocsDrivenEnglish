@@ -1,6 +1,6 @@
 import "server-only";
 
-import { getOptionalDb } from "@/db/client";
+import { getDb } from "@/db/client";
 import { questions as questionsTable, reviewQueue, studySessions } from "@/db/schema";
 import { and, eq, isNull, lte, ne, sql } from "drizzle-orm";
 
@@ -22,10 +22,7 @@ export async function startSharedQuizSession(input: {
   reviewQuestionCount?: number;
   userId: string;
 }): Promise<StartSessionResponse> {
-  const db = getOptionalDb();
-  if (!db) {
-    throw new ApiError("INTERNAL", "DB接続に失敗しました");
-  }
+  const db = getDb();
 
   const sessionId = crypto.randomUUID();
 

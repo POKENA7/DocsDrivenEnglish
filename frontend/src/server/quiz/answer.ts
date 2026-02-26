@@ -1,6 +1,6 @@
 import "server-only";
 
-import { getOptionalDb } from "@/db/client";
+import { getDb } from "@/db/client";
 import { reviewQueue } from "@/db/schema";
 import { and, eq, sql } from "drizzle-orm";
 
@@ -13,8 +13,7 @@ import type { SubmitAnswerInput, SubmitAnswerResponse } from "./types";
 export async function submitQuizAnswer(
   input: SubmitAnswerInput & { userId?: string },
 ): Promise<SubmitAnswerResponse> {
-  const db = getOptionalDb();
-  const q = await getQuestion(db, input.questionId);
+  const q = await getQuestion(input.questionId);
   if (!q || q.sessionId !== input.sessionId) {
     throw new ApiError("BAD_REQUEST", "問題が見つかりませんでした");
   }
@@ -36,8 +35,9 @@ export async function submitQuizAnswer(
 
   const out: SubmitAnswerResponse = { isCorrect, explanation: q.explanation };
 
-  // ログイン済みかつ DB が使える場合のみ review_queue を更新
-  if (db && input.userId) {
+  // ログイン済みの場合のみ review_queue を更新
+  if (input.userId) {
+    const db = getDb();
     // review_queue を更新する対象の questionId（複製元があればそちらを使う）
     const reviewKeyId = q.sourceQuestionId ?? q.questionId;
     const nowMs = Date.now();

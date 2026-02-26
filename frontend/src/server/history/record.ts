@@ -1,6 +1,6 @@
 import "server-only";
 
-import { getOptionalDb } from "@/db/client";
+import { getDb } from "@/db/client";
 import { attempts as attemptsTable } from "@/db/schema";
 
 type RecordAttemptInput = {
@@ -14,8 +14,7 @@ type RecordAttemptInput = {
 };
 
 export async function recordAttempt(input: RecordAttemptInput): Promise<void> {
-  const db = getOptionalDb();
-  if (!db) return;
+  const db = getDb();
 
   await db.insert(attemptsTable).values({
     attemptId: crypto.randomUUID(),

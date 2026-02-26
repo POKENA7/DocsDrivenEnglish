@@ -1,6 +1,6 @@
 import "server-only";
 
-import { getOptionalDb } from "@/db/client";
+import { getDb } from "@/db/client";
 import { reviewQueue } from "@/db/schema";
 import { and, eq } from "drizzle-orm";
 
@@ -11,8 +11,7 @@ export async function deleteReviewItem({
   userId: string;
   questionId: string;
 }): Promise<void> {
-  const db = getOptionalDb();
-  if (!db) return;
+  const db = getDb();
 
   await db
     .delete(reviewQueue)

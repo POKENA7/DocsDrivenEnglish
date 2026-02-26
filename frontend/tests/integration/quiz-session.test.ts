@@ -3,6 +3,30 @@ import { describe, expect, it, vi } from "vitest";
 import { ApiError } from "@/server/quiz/errors";
 import { startQuizSession } from "@/server/quiz/session";
 
+vi.mock("@opennextjs/cloudflare", () => ({
+  getCloudflareContext: () => ({ env: { DB: {} } }),
+}));
+
+const mockDb = {
+  insert: () => ({
+    values: () => Promise.resolve(),
+  }),
+  select: () => ({
+    from: () => ({
+      innerJoin: () => ({
+        where: () => ({
+          limit: () => Promise.resolve([]),
+        }),
+      }),
+    }),
+  }),
+};
+
+vi.mock("@/db/client", () => ({
+  createDb: () => mockDb,
+  getDb: () => mockDb,
+}));
+
 vi.mock("@/lib/openaiClient", () => ({
   OPENAI_MAX_OUTPUT_TOKENS: 10,
   OPENAI_TIMEOUT_MS: 1000,

@@ -51,7 +51,7 @@ const mockDb = {
 
 vi.mock("@/db/client", () => ({
   createDb: () => mockDb,
-  getOptionalDb: () => mockDb,
+  getDb: () => mockDb,
 }));
 
 vi.mock("@clerk/nextjs/server", () => ({

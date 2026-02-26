@@ -2,7 +2,7 @@ import "server-only";
 
 import { cache } from "react";
 
-import { getOptionalDb } from "@/db/client";
+import { getDb } from "@/db/client";
 import { questions as questionsTable, reviewQueue } from "@/db/schema";
 import { and, count, eq, lte } from "drizzle-orm";
 
@@ -15,8 +15,7 @@ type ReviewQueueDisplayItem = {
 
 // LearnPage バナー用: 期限切れ復習問題件数（React.cache でリクエスト内重複排除）
 export const getDueReviewCount = cache(async (userId: string): Promise<number> => {
-  const db = getOptionalDb();
-  if (!db) return 0;
+  const db = getDb();
 
   const nowMs = Date.now();
   const [result] = await db
@@ -32,8 +31,7 @@ export const getReviewQueue = cache(
   async (
     userId: string,
   ): Promise<{ dueItems: ReviewQueueDisplayItem[]; upcomingItems: ReviewQueueDisplayItem[] }> => {
-    const db = getOptionalDb();
-    if (!db) return { dueItems: [], upcomingItems: [] };
+    const db = getDb();
 
     const nowMs = Date.now();
     const rows = await db
