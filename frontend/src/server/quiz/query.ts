@@ -1,16 +1,13 @@
 import "server-only";
 
-import { type createDb, getOptionalDb } from "@/db/client";
+import { getDb } from "@/db/client";
 import { questions as questionsTable, studySessions } from "@/db/schema";
 import { eq } from "drizzle-orm";
 
 import type { QuestionRecord, SessionRecord } from "./types";
 
-export async function getQuestion(
-  db: ReturnType<typeof createDb> | null,
-  questionId: string,
-): Promise<QuestionRecord | null> {
-  if (!db) return null;
+export async function getQuestion(questionId: string): Promise<QuestionRecord | null> {
+  const db = getDb();
 
   const rows = await db
     .select()
@@ -33,8 +30,7 @@ export async function getQuestion(
 }
 
 export async function getSessionSnapshot(sessionId: string): Promise<SessionRecord | null> {
-  const db = getOptionalDb();
-  if (!db) return null;
+  const db = getDb();
 
   const sessionRows = await db
     .select()

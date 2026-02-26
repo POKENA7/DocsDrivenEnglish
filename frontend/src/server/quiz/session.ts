@@ -1,6 +1,6 @@
 import "server-only";
 
-import { type createDb, getOptionalDb } from "@/db/client";
+import { getDb } from "@/db/client";
 import { questions as questionsTable, reviewQueue, studySessions } from "@/db/schema";
 import { and, eq, lte } from "drizzle-orm";
 
@@ -9,11 +9,9 @@ import { ApiError } from "./errors";
 import type { Mode, QuestionRecord, SessionRecord, StartSessionResponse } from "./types";
 
 export async function persistSession(
-  db: ReturnType<typeof createDb> | null,
+  db: ReturnType<typeof getDb>,
   session: SessionRecord,
 ): Promise<void> {
-  if (!db) return;
-
   const now = new Date();
 
   await db.insert(studySessions).values({
@@ -54,14 +52,14 @@ export async function startQuizSession(input: {
     throw new ApiError("BAD_REQUEST", "技術トピックを入力してください");
   }
 
-  const db = getOptionalDb();
+  const db = getDb();
   const plannedCount = input.questionCount ?? 10;
   const sessionId = crypto.randomUUID();
 
   // 期限切れ復習問題を取得
   const reviewQuestionCountRequested = input.reviewQuestionCount ?? 0;
   let reviewQuestions: QuestionRecord[] = [];
-  if (reviewQuestionCountRequested > 0 && db) {
+  if (reviewQuestionCountRequested > 0) {
     const now = Date.now();
     const dueRows = await db
       .select({
@@ -141,8 +139,7 @@ export async function startSingleReviewSession(input: {
   questionId: string;
   userId: string;
 }): Promise<{ sessionId: string }> {
-  const db = getOptionalDb();
-  if (!db) throw new ApiError("INTERNAL", "DB接続に失敗しました");
+  const db = getDb();
 
   const [row] = await db
     .select({

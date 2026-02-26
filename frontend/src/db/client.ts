@@ -10,13 +10,9 @@ export function createDb(db: D1Database) {
   return drizzle(db, { schema });
 }
 
-export function getOptionalDb() {
-  try {
-    const { env } = getCloudflareContext();
-    const db = (env as Record<string, unknown>).DB;
-    if (!db) return null;
-    return createDb(db as D1Database);
-  } catch {
-    return null;
-  }
+export function getDb() {
+  const { env } = getCloudflareContext();
+  const db = (env as Record<string, unknown>).DB;
+  if (!db) throw new Error("D1 database binding (DB) is not available");
+  return createDb(db as D1Database);
 }

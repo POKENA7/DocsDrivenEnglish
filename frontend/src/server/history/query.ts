@@ -1,6 +1,6 @@
 import "server-only";
 
-import { getOptionalDb } from "@/db/client";
+import { getDb } from "@/db/client";
 import { attempts as attemptsTable } from "@/db/schema";
 import { eq } from "drizzle-orm";
 
@@ -37,8 +37,7 @@ export function calculateHistorySummary(attempts: AttemptRecord[]): HistorySumma
 }
 
 export async function getHistorySummaryQuery(userId: string): Promise<HistorySummary> {
-  const db = getOptionalDb();
-  if (!db) return calculateHistorySummary([]);
+  const db = getDb();
 
   const rows = await db
     .select({ answeredAt: attemptsTable.answeredAt, isCorrect: attemptsTable.isCorrect })

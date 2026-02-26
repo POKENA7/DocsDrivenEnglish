@@ -7,8 +7,7 @@ vi.mock("@opennextjs/cloudflare", () => ({
 }));
 
 vi.mock("@/db/client", () => ({
-  createDb: () => null,
-  getOptionalDb: () => ({
+  getDb: () => ({
     delete: () => ({
       where: () => Promise.resolve(),
     }),
