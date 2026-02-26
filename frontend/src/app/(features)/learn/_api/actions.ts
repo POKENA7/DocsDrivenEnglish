@@ -13,6 +13,7 @@ import { startSharedQuizSession } from "@/server/quiz/shared-session";
 import { submitQuizAnswer } from "@/server/quiz/answer";
 import { ApiError } from "@/server/quiz/errors";
 import { fetchMoreExplanation } from "@/server/quiz/moreExplanation";
+import { modeSchema } from "@/server/quiz/types";
 import type {
   SubmitAnswerInput,
   SubmitAnswerResponse,
@@ -23,8 +24,6 @@ import type {
 /* ------------------------------------------------------------------ */
 /*  Zod スキーマ — FormData バリデーション                             */
 /* ------------------------------------------------------------------ */
-
-const modeSchema = z.enum(["word", "reading"]);
 const questionCountSchema = z.coerce.number().int().min(1).max(20).catch(10);
 const reviewQuestionCountSchema = z.coerce.number().int().min(0).catch(0);
 
