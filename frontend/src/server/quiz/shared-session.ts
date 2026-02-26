@@ -1,110 +1,109 @@
 import "server-only";
 
 import { getOptionalDb } from "@/db/client";
-import { sharedQuestions } from "@/db/schema";
-import { and, asc, eq, inArray, sql } from "drizzle-orm";
+import { questions as questionsTable, reviewQueue, studySessions } from "@/db/schema";
+import { and, eq, isNull, lte, ne, sql } from "drizzle-orm";
 
-import { generateQuizItemsFromTopic } from "./generate";
 import { ApiError } from "./errors";
 import { persistSession } from "./session";
 import type { Mode, QuestionRecord, SessionRecord, StartSessionResponse } from "./types";
 
-// shared_questions から取得した行の型
-type SharedQuestionRow = typeof sharedQuestions.$inferSelect;
-
-// shared_questions から取得した問題が questionCount の 80% 以上あれば AI 生成なしで再利用する
-const REUSE_THRESHOLD_RATIO = 0.8;
-
+/**
+ * 他のユーザーが作成した問題（questions テーブル）からランダムに取得してセッションを開始する。
+ * - トピックによるフィルタは行わない
+ * - 復習コピー（source_question_id あり）は除外
+ * - study_sessions.user_id がリクエストユーザーでないセッションの問題を対象とする
+ * - mode でフィルタする
+ * - reviewQuestionCount が指定されていれば復習問題を先頭に組み込む
+ */
 export async function startSharedQuizSession(input: {
-  topic: string;
   mode: Mode;
   questionCount: number;
+  reviewQuestionCount?: number;
   userId: string;
 }): Promise<StartSessionResponse> {
-  const normalizedTopic = input.topic.trim().toLowerCase();
   const db = getOptionalDb();
+  if (!db) {
+    throw new ApiError("INTERNAL", "DB接続に失敗しました");
+  }
+
   const sessionId = crypto.randomUUID();
 
-  // 1. shared_questions から取得（play_count 昇順 → ランダム順で均等分散）
-  let sharedRows: SharedQuestionRow[] = [];
-  if (db) {
-    sharedRows = await db
-      .select()
-      .from(sharedQuestions)
-      .where(and(eq(sharedQuestions.topic, normalizedTopic), eq(sharedQuestions.mode, input.mode)))
-      .orderBy(asc(sharedQuestions.playCount), sql`RANDOM()`)
-      .limit(input.questionCount);
-  }
+  // 期限切れ復習問題を取得
+  const reviewQuestionCountRequested = input.reviewQuestionCount ?? 0;
+  let reviewQuestions: QuestionRecord[] = [];
+  if (reviewQuestionCountRequested > 0) {
+    const now = Date.now();
+    const dueRows = await db
+      .select({
+        questionId: questionsTable.questionId,
+        prompt: questionsTable.prompt,
+        choicesJson: questionsTable.choicesJson,
+        correctIndex: questionsTable.correctIndex,
+        explanation: questionsTable.explanation,
+      })
+      .from(reviewQueue)
+      .innerJoin(questionsTable, eq(reviewQueue.questionId, questionsTable.questionId))
+      .where(and(eq(reviewQueue.userId, input.userId), lte(reviewQueue.nextReviewAt, now)))
+      .limit(reviewQuestionCountRequested);
 
-  // 2. 閾値未満なら不足分を AI 生成
-  const reuseThreshold = Math.ceil(input.questionCount * REUSE_THRESHOLD_RATIO);
-  let aiGeneratedQuestions: QuestionRecord[] = [];
-
-  if (sharedRows.length < reuseThreshold) {
-    const generateCount = input.questionCount - sharedRows.length;
-    const generated = await generateQuizItemsFromTopic(input.topic, input.mode, generateCount);
-
-    aiGeneratedQuestions = generated.map((item) => ({
+    reviewQuestions = dueRows.map((row) => ({
       questionId: crypto.randomUUID(),
       sessionId,
-      prompt: item.prompt,
-      choices: item.choices as [string, string, string, string],
-      correctIndex: item.correctIndex,
-      explanation: item.explanation,
+      prompt: row.prompt,
+      choices: JSON.parse(row.choicesJson) as string[],
+      correctIndex: row.correctIndex,
+      explanation: row.explanation,
+      sourceQuestionId: row.questionId,
     }));
-
-    // AI 生成分を shared_questions に保存
-    if (db && aiGeneratedQuestions.length > 0) {
-      await db.insert(sharedQuestions).values(
-        aiGeneratedQuestions.map((q) => ({
-          id: crypto.randomUUID(),
-          topic: normalizedTopic,
-          mode: input.mode,
-          prompt: q.prompt,
-          choicesJson: JSON.stringify(q.choices),
-          correctIndex: q.correctIndex,
-          explanation: q.explanation,
-          createdBy: input.userId,
-          sourceSessionId: sessionId,
-          playCount: 0,
-          createdAt: new Date(),
-        })),
-      );
-    }
   }
 
-  // 3. shared_questions からの問題を QuestionRecord に変換
-  const reusedQuestions: QuestionRecord[] = sharedRows.map((row) => ({
-    questionId: crypto.randomUUID(),
-    sessionId,
-    prompt: row.prompt,
-    choices: JSON.parse(row.choicesJson) as [string, string, string, string],
-    correctIndex: row.correctIndex,
-    explanation: row.explanation,
-  }));
+  // 他ユーザーの問題を取得する件数 = questionCount - 復習問題数
+  const sharedCount = input.questionCount - reviewQuestions.length;
 
-  // 4. play_count をインクリメント
-  if (db && sharedRows.length > 0) {
-    await db
-      .update(sharedQuestions)
-      .set({ playCount: sql`${sharedQuestions.playCount} + 1` })
+  let sharedQuestions: QuestionRecord[] = [];
+  if (sharedCount > 0) {
+    const rows = await db
+      .select({
+        prompt: questionsTable.prompt,
+        choicesJson: questionsTable.choicesJson,
+        correctIndex: questionsTable.correctIndex,
+        explanation: questionsTable.explanation,
+      })
+      .from(questionsTable)
+      .innerJoin(studySessions, eq(questionsTable.sessionId, studySessions.sessionId))
       .where(
-        inArray(
-          sharedQuestions.id,
-          sharedRows.map((r) => r.id),
+        and(
+          ne(studySessions.userId, input.userId),
+          isNull(questionsTable.sourceQuestionId),
+          eq(questionsTable.mode, input.mode),
         ),
-      );
+      )
+      .orderBy(sql`RANDOM()`)
+      .limit(sharedCount);
+
+    sharedQuestions = rows.map((row) => ({
+      questionId: crypto.randomUUID(),
+      sessionId,
+      prompt: row.prompt,
+      choices: JSON.parse(row.choicesJson) as [string, string, string, string],
+      correctIndex: row.correctIndex,
+      explanation: row.explanation,
+    }));
   }
 
-  // 5. セッションを組み立て・保存
-  const questions: QuestionRecord[] = [...reusedQuestions, ...aiGeneratedQuestions];
+  // 復習問題を先頭に、他ユーザーの問題を後ろに結合
+  const questions: QuestionRecord[] = [...reviewQuestions, ...sharedQuestions];
+
   if (questions.length === 0) {
-    throw new ApiError("INTERNAL", "問題の生成に失敗しました");
+    throw new ApiError("NOT_FOUND", "まだ他のユーザーが作成したクイズがありません");
   }
 
+  // セッションを組み立て・保存
+  const topic = "他のユーザーが作成したクイズ";
   const session: SessionRecord = {
     sessionId,
-    topic: input.topic,
+    topic,
     mode: input.mode,
     plannedCount: questions.length,
     actualCount: questions.length,
