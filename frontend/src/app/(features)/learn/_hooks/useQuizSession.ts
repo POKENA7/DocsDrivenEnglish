@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { useQuizAnswer } from "./useQuizAnswer";
@@ -32,7 +32,7 @@ export function useQuizSession(session: SessionSnapshot) {
     reviewNextAt?: number;
   }>(null);
 
-  const current = useMemo(() => session.questions[index], [index, session.questions]);
+  const current = session.questions[index];
 
   async function submit() {
     if (selectedIndex === null) return;
