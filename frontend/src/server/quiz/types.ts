@@ -1,5 +1,7 @@
 import "server-only";
 
+import { z } from "zod";
+
 export type Mode = "word" | "reading";
 
 export type QuestionRecord = {
@@ -54,6 +56,7 @@ export type MoreExplanationInput = {
   explanation: string;
 };
 
-export type MoreExplanationResponse = {
-  moreExplanation: string;
-};
+export const moreExplanationResponseSchema = z.object({
+  moreExplanation: z.string(),
+});
+export type MoreExplanationResponse = z.infer<typeof moreExplanationResponseSchema>;
