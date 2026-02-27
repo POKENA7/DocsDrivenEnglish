@@ -5,18 +5,13 @@ import { startSingleReviewSession } from "@/server/quiz/session";
 
 // DB に永続化されたレコードを保持するフェイクストア
 const sessionStore = new Map<string, Record<string, unknown>>();
-const questionStore = new Map<string, Record<string, unknown>>();
 
 vi.mock("@opennextjs/cloudflare", () => ({
   getCloudflareContext: () => ({ env: { DB: {} } }),
 }));
 
-// 固定の質問データ（innerJoin 結果のシミュレーション）
+// 固定の質問データ（questions テーブルからの SELECT 結果）
 const sampleRow = {
-  prompt: "次の英文の意味として最も適切なものを選んでください。\n英文: Test content.",
-  choicesJson: JSON.stringify(["選択肢A", "選択肢B", "選択肢C", "選択肢D"]),
-  correctIndex: 1,
-  explanation: "テスト解説",
   topic: "Test Topic",
   mode: "word",
 };
@@ -28,10 +23,7 @@ const mockDb = {
     values: (data: unknown) => {
       const rows = Array.isArray(data) ? data : [data];
       for (const row of rows as Record<string, unknown>[]) {
-        if (typeof row.questionId === "string") {
-          questionStore.set(row.questionId as string, row);
-        }
-        if (typeof row.sessionId === "string" && !row.questionId) {
+        if (typeof row.sessionId === "string") {
           sessionStore.set(row.sessionId as string, row);
         }
       }
@@ -40,10 +32,8 @@ const mockDb = {
   }),
   select: () => ({
     from: () => ({
-      innerJoin: () => ({
-        where: () => ({
-          limit: () => Promise.resolve(selectReturnRows),
-        }),
+      where: () => ({
+        limit: () => Promise.resolve(selectReturnRows),
       }),
     }),
   }),
@@ -57,7 +47,6 @@ vi.mock("@/db/client", () => ({
 describe("startSingleReviewSession", () => {
   beforeEach(() => {
     sessionStore.clear();
-    questionStore.clear();
     selectReturnRows = [sampleRow];
   });
 
@@ -71,26 +60,28 @@ describe("startSingleReviewSession", () => {
     expect(typeof result.sessionId).toBe("string");
   });
 
-  it("sourceQuestionId が元の questionId にセットされる", async () => {
+  it("sessions テーブルに questionIdsJson が正しく保存される", async () => {
     const originalQuestionId = "original-question-id";
 
-    await startSingleReviewSession({
+    const result = await startSingleReviewSession({
       questionId: originalQuestionId,
       userId: "test-user",
     });
 
-    // questionStore に保存された問題を確認
-    const savedQuestion = [...questionStore.values()][0];
-    expect(savedQuestion?.sourceQuestionId).toBe(originalQuestionId);
+    // sessionStore に保存されたセッションを確認
+    const savedSession = sessionStore.get(result.sessionId);
+    const questionIds = JSON.parse(savedSession?.questionIdsJson as string) as string[];
+    expect(questionIds).toEqual([originalQuestionId]);
   });
 
-  it("1問だけのセッションが作成される", async () => {
+  it("questions テーブルへの INSERT は行われない", async () => {
     await startSingleReviewSession({
       questionId: "original-question-id",
       userId: "test-user",
     });
 
-    expect(questionStore.size).toBe(1);
+    // sessions テーブルへの INSERT のみ（1件）
+    expect(sessionStore.size).toBe(1);
   });
 
   it("存在しない questionId を渡すと NOT_FOUND エラーになる", async () => {

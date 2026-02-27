@@ -1,44 +1,12 @@
 import "server-only";
 
 import { getDb } from "@/db/client";
-import { questions as questionsTable, reviewQueue, studySessions } from "@/db/schema";
+import { questions as questionsTable, reviewQueue, sessions as sessionsTable } from "@/db/schema";
 import { and, eq, lte } from "drizzle-orm";
 
 import { generateQuizItemsFromTopic } from "./generate";
 import { ApiError } from "./errors";
-import type { Mode, QuestionRecord, SessionRecord, StartSessionResponse } from "./types";
-
-export async function persistSession(
-  db: ReturnType<typeof getDb>,
-  session: SessionRecord,
-): Promise<void> {
-  const now = new Date();
-
-  await db.insert(studySessions).values({
-    sessionId: session.sessionId,
-    userId: null,
-    topic: session.topic,
-    mode: session.mode,
-    plannedCount: session.plannedCount,
-    actualCount: session.actualCount,
-    createdAt: now,
-    completedAt: null,
-  });
-
-  await db.insert(questionsTable).values(
-    session.questions.map((q) => ({
-      questionId: q.questionId,
-      sessionId: q.sessionId,
-      mode: session.mode,
-      prompt: q.prompt,
-      choicesJson: JSON.stringify(q.choices),
-      correctIndex: q.correctIndex,
-      explanation: q.explanation,
-      sourceQuestionId: q.sourceQuestionId ?? null,
-      createdAt: now,
-    })),
-  );
-}
+import type { Mode, StartSessionResponse } from "./types";
 
 export async function startQuizSession(input: {
   topic: string;
@@ -56,12 +24,20 @@ export async function startQuizSession(input: {
   const plannedCount = input.questionCount ?? 10;
   const sessionId = crypto.randomUUID();
 
-  // 期限切れ復習問題を取得
+  // 期限切れ復習問題の questionId を取得（questions への複製は行わない）
   const reviewQuestionCountRequested = input.reviewQuestionCount ?? 0;
-  let reviewQuestions: QuestionRecord[] = [];
+  let reviewQuestionIds: string[] = [];
+  let reviewQuestionRows: Array<{
+    questionId: string;
+    prompt: string;
+    choicesJson: string;
+    correctIndex: number;
+    explanation: string;
+  }> = [];
+
   if (reviewQuestionCountRequested > 0) {
     const now = Date.now();
-    const dueRows = await db
+    reviewQuestionRows = await db
       .select({
         questionId: questionsTable.questionId,
         prompt: questionsTable.prompt,
@@ -74,60 +50,73 @@ export async function startQuizSession(input: {
       .where(and(eq(reviewQueue.userId, input.userId), lte(reviewQueue.nextReviewAt, now)))
       .limit(reviewQuestionCountRequested);
 
-    // 復習問題は新しい sessionId・questionId で新規セッションに紐付ける
-    // sourceQuestionId に元の questionId を記録し、回答時に review_queue を正しく更新できるようにする
-    reviewQuestions = dueRows.map((row) => ({
-      questionId: crypto.randomUUID(),
-      sessionId,
-      prompt: row.prompt,
-      choices: JSON.parse(row.choicesJson) as string[],
-      correctIndex: row.correctIndex,
-      explanation: row.explanation,
-      sourceQuestionId: row.questionId,
-    }));
+    reviewQuestionIds = reviewQuestionRows.map((r) => r.questionId);
   }
 
-  // 新規 AI 生成問題数 = plannedCount - 実際の復習問題数
-  const newQuestionCount = plannedCount - reviewQuestions.length;
+  // 新規 AI 生成問題
+  const newQuestionCount = plannedCount - reviewQuestionIds.length;
   const generated =
     newQuestionCount > 0
       ? await generateQuizItemsFromTopic(topic, input.mode, newQuestionCount)
       : [];
 
-  const newQuestions: QuestionRecord[] = generated.map((item) => ({
+  const newQuestions = generated.map((item) => ({
     questionId: crypto.randomUUID(),
-    sessionId,
     prompt: item.prompt,
     choices: item.choices as [string, string, string, string],
     correctIndex: item.correctIndex,
     explanation: item.explanation,
   }));
 
-  // 復習問題を先頭に、AI 生成問題を後ろに結合
-  const questions: QuestionRecord[] = [...reviewQuestions, ...newQuestions];
-
-  const actualCount = questions.length;
-  if (actualCount <= 0) {
+  const allQuestionIds = [...reviewQuestionIds, ...newQuestions.map((q) => q.questionId)];
+  if (allQuestionIds.length === 0) {
     throw new ApiError("INTERNAL", "問題の生成に失敗しました");
   }
 
-  const session: SessionRecord = {
+  // DB 保存: sessions（全問題 ID を JSON 配列で保持）+ questions（新規生成分のみ INSERT）
+  const now = new Date();
+
+  await db.insert(sessionsTable).values({
     sessionId,
+    userId: input.userId,
     topic,
     mode: input.mode,
-    plannedCount,
-    actualCount,
-    questions,
-  };
+    questionIdsJson: JSON.stringify(allQuestionIds),
+    createdAt: now,
+  });
 
-  await persistSession(db, session);
+  if (newQuestions.length > 0) {
+    await db.insert(questionsTable).values(
+      newQuestions.map((q) => ({
+        questionId: q.questionId,
+        userId: input.userId,
+        mode: input.mode,
+        topic,
+        prompt: q.prompt,
+        choicesJson: JSON.stringify(q.choices),
+        correctIndex: q.correctIndex,
+        explanation: q.explanation,
+        createdAt: now,
+      })),
+    );
+  }
+
+  // レスポンス組み立て（復習問題 + 新規問題の順）
+  const allQuestions = [
+    ...reviewQuestionRows.map((r) => ({
+      questionId: r.questionId,
+      prompt: r.prompt,
+      choices: JSON.parse(r.choicesJson) as string[],
+      correctIndex: r.correctIndex,
+      explanation: r.explanation,
+    })),
+    ...newQuestions,
+  ];
 
   return {
     sessionId,
-    plannedCount,
-    actualCount,
-    topic: session.topic,
-    questions: questions.map((q) => ({
+    topic,
+    questions: allQuestions.map((q) => ({
       questionId: q.questionId,
       prompt: q.prompt,
       choices: q.choices.map((text, index) => ({ index, text })),
@@ -143,15 +132,10 @@ export async function startSingleReviewSession(input: {
 
   const [row] = await db
     .select({
-      prompt: questionsTable.prompt,
-      choicesJson: questionsTable.choicesJson,
-      correctIndex: questionsTable.correctIndex,
-      explanation: questionsTable.explanation,
-      topic: studySessions.topic,
-      mode: studySessions.mode,
+      topic: questionsTable.topic,
+      mode: questionsTable.mode,
     })
     .from(questionsTable)
-    .innerJoin(studySessions, eq(questionsTable.sessionId, studySessions.sessionId))
     .where(eq(questionsTable.questionId, input.questionId))
     .limit(1);
 
@@ -159,23 +143,13 @@ export async function startSingleReviewSession(input: {
 
   const sessionId = crypto.randomUUID();
 
-  const question: QuestionRecord = {
-    questionId: crypto.randomUUID(),
+  await db.insert(sessionsTable).values({
     sessionId,
-    prompt: row.prompt,
-    choices: JSON.parse(row.choicesJson) as [string, string, string, string],
-    correctIndex: row.correctIndex,
-    explanation: row.explanation,
-    sourceQuestionId: input.questionId,
-  };
-
-  await persistSession(db, {
-    sessionId,
+    userId: input.userId,
     topic: row.topic,
-    mode: row.mode as Mode,
-    plannedCount: 1,
-    actualCount: 1,
-    questions: [question],
+    mode: row.mode,
+    questionIdsJson: JSON.stringify([input.questionId]),
+    createdAt: new Date(),
   });
 
   return { sessionId };

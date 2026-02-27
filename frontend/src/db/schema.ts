@@ -1,26 +1,23 @@
 import { integer, sqliteTable, text, unique } from "drizzle-orm/sqlite-core";
 
-export const studySessions = sqliteTable("study_sessions", {
+export const sessions = sqliteTable("sessions", {
   sessionId: text("session_id").primaryKey(),
-  userId: text("user_id"),
+  userId: text("user_id").notNull(),
   topic: text("topic").notNull(),
   mode: text("mode").notNull(),
-  plannedCount: integer("planned_count").notNull(),
-  actualCount: integer("actual_count").notNull(),
+  questionIdsJson: text("question_ids_json").notNull(),
   createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
-  completedAt: integer("completed_at", { mode: "timestamp_ms" }),
 });
 
 export const questions = sqliteTable("questions", {
   questionId: text("question_id").primaryKey(),
-  sessionId: text("session_id").notNull(),
+  userId: text("user_id").notNull(),
   mode: text("mode").notNull(),
+  topic: text("topic").notNull(),
   prompt: text("prompt").notNull(),
   choicesJson: text("choices_json").notNull(),
   correctIndex: integer("correct_index").notNull(),
   explanation: text("explanation").notNull(),
-  // 復習問題として複製された場合の複製元 questionId（通常問題は null）
-  sourceQuestionId: text("source_question_id"),
   createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
 });
 

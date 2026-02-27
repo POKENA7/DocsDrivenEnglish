@@ -1,7 +1,7 @@
 import "server-only";
 
 import { getDb } from "@/db/client";
-import { reviewQueue } from "@/db/schema";
+import { reviewQueue, sessions as sessionsTable } from "@/db/schema";
 import { and, eq, sql } from "drizzle-orm";
 
 import { recordAttempt } from "@/server/history/record";
@@ -14,7 +14,19 @@ export async function submitQuizAnswer(
   input: SubmitAnswerInput & { userId?: string },
 ): Promise<SubmitAnswerResponse> {
   const q = await getQuestion(input.questionId);
-  if (q.sessionId !== input.sessionId) {
+
+  // セッションに該当 questionId が含まれるか検証
+  const db = getDb();
+  const [session] = await db
+    .select({ questionIdsJson: sessionsTable.questionIdsJson })
+    .from(sessionsTable)
+    .where(eq(sessionsTable.sessionId, input.sessionId))
+    .limit(1);
+
+  if (!session) throw new ApiError("BAD_REQUEST", "セッションが見つかりません");
+
+  const questionIds = JSON.parse(session.questionIdsJson) as string[];
+  if (!questionIds.includes(input.questionId)) {
     throw new ApiError("BAD_REQUEST", "セッションが一致しません");
   }
 
@@ -37,9 +49,6 @@ export async function submitQuizAnswer(
 
   // ログイン済みの場合のみ review_queue を更新
   if (input.userId) {
-    const db = getDb();
-    // review_queue を更新する対象の questionId（複製元があればそちらを使う）
-    const reviewKeyId = q.sourceQuestionId ?? q.questionId;
     const nowMs = Date.now();
 
     if (!isCorrect) {
@@ -50,7 +59,7 @@ export async function submitQuizAnswer(
         .values({
           id: crypto.randomUUID(),
           userId: input.userId,
-          questionId: reviewKeyId,
+          questionId: input.questionId,
           nextReviewAt,
           wrongCount: 1,
         })
@@ -68,7 +77,9 @@ export async function submitQuizAnswer(
       const updated = await db
         .update(reviewQueue)
         .set({ nextReviewAt })
-        .where(and(eq(reviewQueue.userId, input.userId), eq(reviewQueue.questionId, reviewKeyId)))
+        .where(
+          and(eq(reviewQueue.userId, input.userId), eq(reviewQueue.questionId, input.questionId)),
+        )
         .returning({ id: reviewQueue.id });
       if (updated.length > 0) {
         out.reviewNextAt = nextReviewAt;

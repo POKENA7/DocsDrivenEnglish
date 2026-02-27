@@ -5,8 +5,6 @@ import { useQuizAnswer } from "./useQuizAnswer";
 
 export type SessionSnapshot = {
   sessionId: string;
-  plannedCount: number;
-  actualCount: number;
   topic: string;
   questions: Array<{
     questionId: string;
