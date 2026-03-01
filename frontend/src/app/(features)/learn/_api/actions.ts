@@ -127,5 +127,6 @@ export async function submitQuizAnswerAction(
 export async function fetchMoreExplanationAction(
   input: MoreExplanationInput,
 ): Promise<MoreExplanationResponse> {
+  await requireUserId();
   return fetchMoreExplanation(input);
 }
