@@ -1,19 +1,49 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
-import { calculateHistorySummary } from "@/server/history/query";
+import { getHistorySummaryQuery } from "@/server/history/query";
 
-describe("calculateHistorySummary", () => {
-  it("counts distinct study days", () => {
-    const attempts = [
-      { answeredAt: new Date("2026-01-01T01:00:00.000Z"), isCorrect: true },
-      { answeredAt: new Date("2026-01-01T23:59:59.000Z"), isCorrect: false },
-      { answeredAt: new Date("2026-01-02T00:00:00.000Z"), isCorrect: true },
-    ];
+vi.mock("@opennextjs/cloudflare", () => ({
+  getCloudflareContext: () => ({ env: { DB: {} } }),
+}));
 
-    const summary = calculateHistorySummary(attempts);
+function makeDb(row: { attemptCount: number; correctRate: string | null; studyDays: number }) {
+  return {
+    select: () => ({
+      from: () => ({
+        where: () => Promise.resolve([row]),
+      }),
+    }),
+  };
+}
 
-    expect(summary.attemptCount).toBe(3);
-    expect(summary.correctRate).toBeCloseTo(2 / 3);
-    expect(summary.studyDays).toBe(2);
+vi.mock("@/db/client", () => ({
+  getDb: vi.fn(),
+}));
+
+describe("getHistorySummaryQuery", () => {
+  it("レコードがない場合はすべて 0 を返す", async () => {
+    const { getDb } = await import("@/db/client");
+    vi.mocked(getDb).mockReturnValue(
+      makeDb({ attemptCount: 0, correctRate: null, studyDays: 0 }) as ReturnType<typeof getDb>,
+    );
+
+    const result = await getHistorySummaryQuery("user-1");
+
+    expect(result).toEqual({ attemptCount: 0, correctRate: 0, studyDays: 0 });
+  });
+
+  it("DB の集計値を正しく HistorySummary にマッピングする", async () => {
+    const { getDb } = await import("@/db/client");
+    vi.mocked(getDb).mockReturnValue(
+      makeDb({ attemptCount: 3, correctRate: "0.6666666666666666", studyDays: 2 }) as ReturnType<
+        typeof getDb
+      >,
+    );
+
+    const result = await getHistorySummaryQuery("user-1");
+
+    expect(result.attemptCount).toBe(3);
+    expect(result.correctRate).toBeCloseTo(2 / 3);
+    expect(result.studyDays).toBe(2);
   });
 });
