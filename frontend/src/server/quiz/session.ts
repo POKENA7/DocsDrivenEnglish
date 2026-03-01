@@ -1,11 +1,12 @@
 import "server-only";
 
 import { getDb } from "@/db/client";
-import { questions as questionsTable, reviewQueue, sessions as sessionsTable } from "@/db/schema";
-import { and, eq, lte } from "drizzle-orm";
+import { questions as questionsTable, sessions as sessionsTable } from "@/db/schema";
+import { eq } from "drizzle-orm";
 
 import { generateQuizItemsFromTopic } from "./generate";
 import { ApiError } from "./errors";
+import { fetchDueReviewQuestions } from "./query";
 import type { Mode, StartSessionResponse } from "./types";
 
 export async function startQuizSession(input: {
@@ -26,32 +27,11 @@ export async function startQuizSession(input: {
 
   // 期限切れ復習問題の questionId を取得（questions への複製は行わない）
   const reviewQuestionCountRequested = input.reviewQuestionCount ?? 0;
-  let reviewQuestionIds: string[] = [];
-  let reviewQuestionRows: Array<{
-    questionId: string;
-    prompt: string;
-    choicesJson: string;
-    correctIndex: number;
-    explanation: string;
-  }> = [];
-
-  if (reviewQuestionCountRequested > 0) {
-    const now = Date.now();
-    reviewQuestionRows = await db
-      .select({
-        questionId: questionsTable.questionId,
-        prompt: questionsTable.prompt,
-        choicesJson: questionsTable.choicesJson,
-        correctIndex: questionsTable.correctIndex,
-        explanation: questionsTable.explanation,
-      })
-      .from(reviewQueue)
-      .innerJoin(questionsTable, eq(reviewQueue.questionId, questionsTable.questionId))
-      .where(and(eq(reviewQueue.userId, input.userId), lte(reviewQueue.nextReviewAt, now)))
-      .limit(reviewQuestionCountRequested);
-
-    reviewQuestionIds = reviewQuestionRows.map((r) => r.questionId);
-  }
+  const reviewQuestionRows = await fetchDueReviewQuestions(
+    input.userId,
+    reviewQuestionCountRequested,
+  );
+  const reviewQuestionIds = reviewQuestionRows.map((r) => r.questionId);
 
   // 新規 AI 生成問題
   const newQuestionCount = plannedCount - reviewQuestionIds.length;

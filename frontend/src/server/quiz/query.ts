@@ -3,11 +3,38 @@ import "server-only";
 import { notFound } from "next/navigation";
 
 import { getDb } from "@/db/client";
-import { questions as questionsTable, sessions as sessionsTable } from "@/db/schema";
-import { eq, inArray } from "drizzle-orm";
+import { questions as questionsTable, reviewQueue, sessions as sessionsTable } from "@/db/schema";
+import { and, eq, inArray, lte } from "drizzle-orm";
 
 import { ApiError } from "./errors";
-import type { QuestionRecord, SessionRecord } from "./types";
+import type { QuestionRecord, ReviewQuestionRow, SessionRecord } from "./types";
+
+/**
+ * 期限切れの復習問題を reviewQueue から取得する共通ヘルパー。
+ * session.ts / shared-session.ts の両方から利用される。
+ */
+export async function fetchDueReviewQuestions(
+  userId: string,
+  limit: number,
+): Promise<ReviewQuestionRow[]> {
+  if (limit <= 0) return [];
+
+  const db = getDb();
+  const now = Date.now();
+
+  return db
+    .select({
+      questionId: questionsTable.questionId,
+      prompt: questionsTable.prompt,
+      choicesJson: questionsTable.choicesJson,
+      correctIndex: questionsTable.correctIndex,
+      explanation: questionsTable.explanation,
+    })
+    .from(reviewQueue)
+    .innerJoin(questionsTable, eq(reviewQueue.questionId, questionsTable.questionId))
+    .where(and(eq(reviewQueue.userId, userId), lte(reviewQueue.nextReviewAt, now)))
+    .limit(limit);
+}
 
 export async function getQuestion(questionId: string): Promise<QuestionRecord> {
   const db = getDb();
