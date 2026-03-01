@@ -16,9 +16,11 @@ const mockDb = {
       innerJoin: () => ({
         where: () => ({
           limit: () => Promise.resolve([]),
-          orderBy: () => ({
-            limit: () => Promise.resolve([]),
-          }),
+        }),
+      }),
+      where: () => ({
+        orderBy: () => ({
+          limit: () => Promise.resolve([]),
         }),
       }),
     }),

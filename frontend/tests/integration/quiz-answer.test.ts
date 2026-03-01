@@ -3,8 +3,9 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { startQuizSession } from "@/server/quiz/session";
 import { submitQuizAnswer } from "@/server/quiz/answer";
 
-// DB に永続化された question を保持するフェイクストア
+// DB に永続化されたレコードを保持するフェイクストア
 const questionStore = new Map<string, Record<string, unknown>>();
+const sessionStore = new Map<string, Record<string, unknown>>();
 
 vi.mock("@opennextjs/cloudflare", () => ({
   getCloudflareContext: () => ({ env: { DB: {} } }),
@@ -15,11 +16,13 @@ const mockDb = {
     values: (data: unknown) => {
       const rows = Array.isArray(data) ? data : [data];
       for (const row of rows as Record<string, unknown>[]) {
-        if (typeof row.questionId === "string") {
-          questionStore.set(row.questionId, row);
+        if (typeof row.questionId === "string" && typeof row.prompt === "string") {
+          questionStore.set(row.questionId as string, row);
+        }
+        if (typeof row.questionIdsJson === "string") {
+          sessionStore.set(row.sessionId as string, row);
         }
       }
-      // onConflictDoUpdate チェーン対応（直接 await も .onConflictDoUpdate() チェーンも両方サポート）
       const p = Promise.resolve() as Promise<unknown> & {
         onConflictDoUpdate: () => Promise<unknown[]>;
       };
@@ -34,10 +37,21 @@ const mockDb = {
       }),
     }),
   }),
-  select: () => ({
+  select: (...args: unknown[]) => ({
     from: () => ({
+      innerJoin: () => ({
+        where: () => ({
+          limit: () => Promise.resolve([]),
+        }),
+      }),
       where: () => ({
-        limit: () => Promise.resolve([...questionStore.values()].slice(0, 1)),
+        limit: () => {
+          // select({...}) → sessions テーブルクエリ / select() → questions テーブルクエリ
+          if (args.length > 0 && args[0] != null) {
+            return Promise.resolve([...sessionStore.values()].slice(0, 1));
+          }
+          return Promise.resolve([...questionStore.values()].slice(0, 1));
+        },
       }),
     }),
   }),
@@ -92,6 +106,7 @@ vi.mock("@/lib/openaiClient", () => {
 describe("submitQuizAnswer", () => {
   beforeEach(() => {
     questionStore.clear();
+    sessionStore.clear();
   });
 
   it("scores answer", async () => {
@@ -194,6 +209,9 @@ describe("submitQuizAnswer", () => {
     });
 
     const first = session.questions[0]!;
+
+    // sessionStore をクリアして wrong-session-id が見つからないようにする
+    sessionStore.clear();
 
     await expect(
       submitQuizAnswer({

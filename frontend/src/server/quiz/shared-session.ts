@@ -1,18 +1,15 @@
 import "server-only";
 
 import { getDb } from "@/db/client";
-import { questions as questionsTable, reviewQueue, studySessions } from "@/db/schema";
-import { and, eq, isNull, lte, ne, sql } from "drizzle-orm";
+import { questions as questionsTable, reviewQueue, sessions as sessionsTable } from "@/db/schema";
+import { and, eq, lte, ne, sql } from "drizzle-orm";
 
 import { ApiError } from "./errors";
-import { persistSession } from "./session";
-import type { Mode, QuestionRecord, SessionRecord, StartSessionResponse } from "./types";
+import type { Mode, StartSessionResponse } from "./types";
 
 /**
  * 他のユーザーが作成した問題（questions テーブル）からランダムに取得してセッションを開始する。
  * - トピックによるフィルタは行わない
- * - 復習コピー（source_question_id あり）は除外
- * - study_sessions.user_id がリクエストユーザーでないセッションの問題を対象とする
  * - mode でフィルタする
  * - reviewQuestionCount が指定されていれば復習問題を先頭に組み込む
  */
@@ -26,12 +23,20 @@ export async function startSharedQuizSession(input: {
 
   const sessionId = crypto.randomUUID();
 
-  // 期限切れ復習問題を取得
+  // 期限切れ復習問題の questionId を取得
   const reviewQuestionCountRequested = input.reviewQuestionCount ?? 0;
-  let reviewQuestions: QuestionRecord[] = [];
+  let reviewQuestionIds: string[] = [];
+  let reviewQuestionRows: Array<{
+    questionId: string;
+    prompt: string;
+    choicesJson: string;
+    correctIndex: number;
+    explanation: string;
+  }> = [];
+
   if (reviewQuestionCountRequested > 0) {
     const now = Date.now();
-    const dueRows = await db
+    reviewQuestionRows = await db
       .select({
         questionId: questionsTable.questionId,
         prompt: questionsTable.prompt,
@@ -44,76 +49,71 @@ export async function startSharedQuizSession(input: {
       .where(and(eq(reviewQueue.userId, input.userId), lte(reviewQueue.nextReviewAt, now)))
       .limit(reviewQuestionCountRequested);
 
-    reviewQuestions = dueRows.map((row) => ({
-      questionId: crypto.randomUUID(),
-      sessionId,
-      prompt: row.prompt,
-      choices: JSON.parse(row.choicesJson) as string[],
-      correctIndex: row.correctIndex,
-      explanation: row.explanation,
-      sourceQuestionId: row.questionId,
-    }));
+    reviewQuestionIds = reviewQuestionRows.map((r) => r.questionId);
   }
 
   // 他ユーザーの問題を取得する件数 = questionCount - 復習問題数
-  const sharedCount = input.questionCount - reviewQuestions.length;
+  const sharedCount = input.questionCount - reviewQuestionIds.length;
 
-  let sharedQuestions: QuestionRecord[] = [];
+  let sharedQuestionRows: Array<{
+    questionId: string;
+    prompt: string;
+    choicesJson: string;
+    correctIndex: number;
+    explanation: string;
+  }> = [];
+
   if (sharedCount > 0) {
-    const rows = await db
+    sharedQuestionRows = await db
       .select({
+        questionId: questionsTable.questionId,
         prompt: questionsTable.prompt,
         choicesJson: questionsTable.choicesJson,
         correctIndex: questionsTable.correctIndex,
         explanation: questionsTable.explanation,
       })
       .from(questionsTable)
-      .innerJoin(studySessions, eq(questionsTable.sessionId, studySessions.sessionId))
-      .where(
-        and(
-          ne(studySessions.userId, input.userId),
-          isNull(questionsTable.sourceQuestionId),
-          eq(questionsTable.mode, input.mode),
-        ),
-      )
+      .where(and(ne(questionsTable.userId, input.userId), eq(questionsTable.mode, input.mode)))
       .orderBy(sql`RANDOM()`)
       .limit(sharedCount);
-
-    sharedQuestions = rows.map((row) => ({
-      questionId: crypto.randomUUID(),
-      sessionId,
-      prompt: row.prompt,
-      choices: JSON.parse(row.choicesJson) as [string, string, string, string],
-      correctIndex: row.correctIndex,
-      explanation: row.explanation,
-    }));
   }
 
-  // 復習問題を先頭に、他ユーザーの問題を後ろに結合
-  const questions: QuestionRecord[] = [...reviewQuestions, ...sharedQuestions];
+  const allQuestionIds = [...reviewQuestionIds, ...sharedQuestionRows.map((r) => r.questionId)];
 
-  if (questions.length === 0) {
+  if (allQuestionIds.length === 0) {
     throw new ApiError("NOT_FOUND", "まだ他のユーザーが作成したクイズがありません");
   }
 
-  // セッションを組み立て・保存
   const topic = "他のユーザーが作成したクイズ";
-  const session: SessionRecord = {
+  const now = new Date();
+
+  await db.insert(sessionsTable).values({
     sessionId,
+    userId: input.userId,
     topic,
     mode: input.mode,
-    plannedCount: questions.length,
-    actualCount: questions.length,
-    questions,
-  };
-  await persistSession(db, session);
+    questionIdsJson: JSON.stringify(allQuestionIds),
+    createdAt: now,
+  });
+
+  // レスポンス組み立て（復習問題 + 他ユーザー問題の順）
+  const allQuestions = [
+    ...reviewQuestionRows.map((r) => ({
+      questionId: r.questionId,
+      prompt: r.prompt,
+      choices: JSON.parse(r.choicesJson) as string[],
+    })),
+    ...sharedQuestionRows.map((r) => ({
+      questionId: r.questionId,
+      prompt: r.prompt,
+      choices: JSON.parse(r.choicesJson) as string[],
+    })),
+  ];
 
   return {
     sessionId,
-    plannedCount: session.plannedCount,
-    actualCount: session.actualCount,
-    topic: session.topic,
-    questions: questions.map((q) => ({
+    topic,
+    questions: allQuestions.map((q) => ({
       questionId: q.questionId,
       prompt: q.prompt,
       choices: q.choices.map((text, index) => ({ index, text })),

@@ -65,7 +65,6 @@ describe("startQuizSession", () => {
     });
 
     expect(result.sessionId).toBeTruthy();
-    expect(result.plannedCount).toBe(10);
     expect(result.topic).toBe("React Hooks");
     expect(Array.isArray(result.questions)).toBe(true);
   });
@@ -78,6 +77,6 @@ describe("startQuizSession", () => {
       userId: "test-user",
     });
 
-    expect(result.plannedCount).toBe(3);
+    expect(result.questions).toHaveLength(1);
   });
 });
