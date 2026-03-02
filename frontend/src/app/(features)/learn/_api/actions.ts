@@ -79,8 +79,8 @@ export async function startSharedSessionFormAction(
 ): Promise<{ error: string | null }> {
   const parsed = sharedSessionInput.safeParse({
     mode: formData.get("mode") ?? "word",
-    questionCount: formData.get("sharedQuestionCount") ?? 10,
-    reviewQuestionCount: formData.get("sharedReviewQuestionCount") ?? 0,
+    questionCount: formData.get("questionCount") ?? 10,
+    reviewQuestionCount: formData.get("reviewQuestionCount") ?? 0,
   });
   if (!parsed.success) return { error: null };
 

@@ -4,6 +4,7 @@ import { useActionState, useState } from "react";
 
 import { startSessionFormAction, startSharedSessionFormAction } from "../_api/actions";
 
+import QuizFormFields from "./QuizFormFields";
 import SubmitButton from "./SubmitButton";
 
 type Tab = "ai" | "shared";
@@ -12,30 +13,9 @@ export default function LearnPage({ dueCount }: { dueCount: number }) {
   const [tab, setTab] = useState<Tab>("ai");
   const [questionCount, setQuestionCount] = useState(10);
   const [reviewQuestionCount, setReviewQuestionCount] = useState(2);
-  const [sharedQuestionCount, setSharedQuestionCount] = useState(10);
-  const [sharedReviewQuestionCount, setSharedReviewQuestionCount] = useState(2);
   const [sharedState, sharedAction] = useActionState(startSharedSessionFormAction, {
     error: null,
   });
-
-  function handleQuestionCountChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const val = Math.max(1, Math.min(20, Number(e.target.value) || 1));
-    setQuestionCount(val);
-    if (reviewQuestionCount >= val) {
-      setReviewQuestionCount(val - 1);
-    }
-  }
-
-  function handleSharedQuestionCountChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const val = Math.max(1, Math.min(20, Number(e.target.value) || 1));
-    setSharedQuestionCount(val);
-    if (sharedReviewQuestionCount >= val) {
-      setSharedReviewQuestionCount(val - 1);
-    }
-  }
-
-  const maxReview = questionCount - 1;
-  const maxSharedReview = sharedQuestionCount - 1;
 
   return (
     <main className="container-page page">
@@ -111,68 +91,12 @@ export default function LearnPage({ dueCount }: { dueCount: number }) {
               </p>
             </div>
 
-            <fieldset className="mt-6">
-              <legend className="text-sm font-medium">Mode</legend>
-              <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                <label className="choice">
-                  <input className="mt-0.5" type="radio" name="mode" value="word" defaultChecked />
-                  <span>
-                    <span className="block font-medium">word</span>
-                    <span className="mt-1 block text-xs text-muted-foreground">
-                      単語・用語の理解を優先
-                    </span>
-                  </span>
-                </label>
-                <label className="choice">
-                  <input className="mt-0.5" type="radio" name="mode" value="reading" />
-                  <span>
-                    <span className="block font-medium">reading</span>
-                    <span className="mt-1 block text-xs text-muted-foreground">
-                      文脈・読解を優先
-                    </span>
-                  </span>
-                </label>
-              </div>
-            </fieldset>
-
-            <div className="mt-6 space-y-2">
-              <label className="text-sm font-medium" htmlFor="questionCount">
-                出題問題数
-              </label>
-              <input
-                id="questionCount"
-                name="questionCount"
-                type="number"
-                min={1}
-                max={20}
-                value={questionCount}
-                onChange={handleQuestionCountChange}
-                className="input w-28"
-              />
-              <p className="text-xs text-muted-foreground">1〜20問の範囲で設定できます</p>
-            </div>
-
-            <div className="mt-6 space-y-2">
-              <label className="text-sm font-medium" htmlFor="reviewQuestionCount">
-                うち復習問題数（上限）
-              </label>
-              <select
-                id="reviewQuestionCount"
-                name="reviewQuestionCount"
-                value={reviewQuestionCount}
-                onChange={(e) => setReviewQuestionCount(Number(e.target.value))}
-                className="input w-28"
-              >
-                {Array.from({ length: maxReview + 1 }, (_, i) => (
-                  <option key={i} value={i}>
-                    {i}問まで
-                  </option>
-                ))}
-              </select>
-              <p className="text-xs text-muted-foreground">
-                過去に間違えた問題を優先的に出題します
-              </p>
-            </div>
+            <QuizFormFields
+              questionCount={questionCount}
+              reviewQuestionCount={reviewQuestionCount}
+              onQuestionCountChange={setQuestionCount}
+              onReviewQuestionCountChange={setReviewQuestionCount}
+            />
 
             <div className="mt-6 flex items-center gap-3">
               <SubmitButton />
@@ -200,68 +124,12 @@ export default function LearnPage({ dueCount }: { dueCount: number }) {
               </div>
             )}
 
-            <fieldset className="mt-6">
-              <legend className="text-sm font-medium">Mode</legend>
-              <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                <label className="choice">
-                  <input className="mt-0.5" type="radio" name="mode" value="word" defaultChecked />
-                  <span>
-                    <span className="block font-medium">word</span>
-                    <span className="mt-1 block text-xs text-muted-foreground">
-                      単語・用語の理解を優先
-                    </span>
-                  </span>
-                </label>
-                <label className="choice">
-                  <input className="mt-0.5" type="radio" name="mode" value="reading" />
-                  <span>
-                    <span className="block font-medium">reading</span>
-                    <span className="mt-1 block text-xs text-muted-foreground">
-                      文脈・読解を優先
-                    </span>
-                  </span>
-                </label>
-              </div>
-            </fieldset>
-
-            <div className="mt-6 space-y-2">
-              <label className="text-sm font-medium" htmlFor="sharedQuestionCount">
-                出題問題数
-              </label>
-              <input
-                id="sharedQuestionCount"
-                name="sharedQuestionCount"
-                type="number"
-                min={1}
-                max={20}
-                value={sharedQuestionCount}
-                onChange={handleSharedQuestionCountChange}
-                className="input w-28"
-              />
-              <p className="text-xs text-muted-foreground">1〜20問の範囲で設定できます</p>
-            </div>
-
-            <div className="mt-6 space-y-2">
-              <label className="text-sm font-medium" htmlFor="sharedReviewQuestionCount">
-                うち復習問題数（上限）
-              </label>
-              <select
-                id="sharedReviewQuestionCount"
-                name="sharedReviewQuestionCount"
-                value={sharedReviewQuestionCount}
-                onChange={(e) => setSharedReviewQuestionCount(Number(e.target.value))}
-                className="input w-28"
-              >
-                {Array.from({ length: maxSharedReview + 1 }, (_, i) => (
-                  <option key={i} value={i}>
-                    {i}問まで
-                  </option>
-                ))}
-              </select>
-              <p className="text-xs text-muted-foreground">
-                過去に間違えた問題を優先的に出題します
-              </p>
-            </div>
+            <QuizFormFields
+              questionCount={questionCount}
+              reviewQuestionCount={reviewQuestionCount}
+              onQuestionCountChange={setQuestionCount}
+              onReviewQuestionCountChange={setReviewQuestionCount}
+            />
 
             <div className="mt-6">
               <SubmitButton />
