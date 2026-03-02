@@ -3,7 +3,12 @@ import "server-only";
 import { notFound } from "next/navigation";
 
 import { getDb } from "@/db/client";
-import { questions as questionsTable, reviewQueue, sessions as sessionsTable } from "@/db/schema";
+import {
+  attempts,
+  questions as questionsTable,
+  reviewQueue,
+  sessions as sessionsTable,
+} from "@/db/schema";
 import { and, eq, inArray, lte } from "drizzle-orm";
 
 import { ApiError } from "./errors";
@@ -92,5 +97,66 @@ export async function getSessionSnapshot(sessionId: string): Promise<SessionReco
     topic: session.topic,
     mode: session.mode as SessionRecord["mode"],
     questions,
+  };
+}
+
+export type SessionResult = {
+  topic: string;
+  mode: "word" | "reading";
+  totalCount: number;
+  correctCount: number;
+  items: Array<{
+    questionId: string;
+    prompt: string;
+    correctIndex: number;
+    choices: string[];
+    isCorrect: boolean;
+  }>;
+};
+
+export async function getSessionResult(sessionId: string): Promise<SessionResult> {
+  const db = getDb();
+
+  const [session] = await db
+    .select()
+    .from(sessionsTable)
+    .where(eq(sessionsTable.sessionId, sessionId))
+    .limit(1);
+
+  if (!session) notFound();
+
+  const questionIds = JSON.parse(session.questionIdsJson) as string[];
+
+  const [questionRows, attemptRows] = await Promise.all([
+    db.select().from(questionsTable).where(inArray(questionsTable.questionId, questionIds)),
+    db.select().from(attempts).where(eq(attempts.sessionId, sessionId)),
+  ]);
+
+  const questionMap = new Map(questionRows.map((q) => [q.questionId, q]));
+  const attemptMap = new Map(attemptRows.map((a) => [a.questionId, a]));
+
+  const items = questionIds
+    .map((id) => {
+      const q = questionMap.get(id);
+      if (!q) return null;
+      const attempt = attemptMap.get(id);
+      return {
+        questionId: q.questionId,
+        prompt: q.prompt,
+        correctIndex: q.correctIndex,
+        choices: JSON.parse(q.choicesJson) as string[],
+        isCorrect: attempt?.isCorrect ?? false,
+      };
+    })
+    .filter((item) => item != null);
+
+  const correctCount = items.filter((item) => item.isCorrect).length;
+
+  return {
+    topic: session.topic,
+    mode: session.mode as SessionResult["mode"],
+    totalCount: items.length,
+    correctCount,
+    items,
   };
 }
