@@ -1,31 +1,67 @@
 import Link from "next/link";
 
-import type { Mode } from "@/server/quiz/types";
+import type { SessionResult } from "@/server/quiz/query";
 import { continueSessionFormAction } from "../_api/actions";
 
 import ContinueButton from "./ContinueButton";
 
-export default function SessionCompletePage(props: {
-  sessionId: string;
-  topic: string;
-  mode: Mode;
-}) {
+export default function SessionCompletePage(props: { result: SessionResult; sessionId: string }) {
+  const { result } = props;
+  const percentage = Math.round((result.correctCount / result.totalCount) * 100);
+
   return (
     <main className="container-page page">
       <div className="reveal">
-        <h1 className="heading-1">セッション完了</h1>
-        <p className="mt-2 lede">このセッションの問題をすべて回答しました。</p>
+        <h1 className="heading-1">セッション完了 🎉</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          {result.topic} — {result.mode} モード
+        </p>
       </div>
 
       <section className="mt-6 card reveal" style={{ animationDelay: "80ms" }}>
-        <form action={continueSessionFormAction} className="space-y-4">
-          <input type="hidden" name="topic" value={props.topic} />
-          <input type="hidden" name="mode" value={props.mode} />
+        <dl className="grid grid-cols-2 gap-4">
+          <div>
+            <dt className="text-xs text-muted-foreground">正答数</dt>
+            <dd className="mt-1 text-2xl font-bold">
+              {result.correctCount} / {result.totalCount}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-xs text-muted-foreground">正答率</dt>
+            <dd className="mt-1 text-2xl font-bold">{percentage}%</dd>
+          </div>
+        </dl>
+      </section>
 
+      <section className="mt-4 space-y-2 reveal" style={{ animationDelay: "160ms" }}>
+        <h2 className="text-sm font-semibold text-muted-foreground">問題ごとの結果</h2>
+        {result.items.map((item, i) => (
+          <div key={item.questionId} className="card">
+            <div className="flex items-start gap-3">
+              <span>{item.isCorrect ? "✅" : "❌"}</span>
+              <div className="min-w-0">
+                <p className="text-sm font-medium line-clamp-2">
+                  Q{i + 1}. {item.prompt}
+                </p>
+                {!item.isCorrect && (
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    正解: {item.choices[item.correctIndex]}
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+        ))}
+      </section>
+
+      <section className="mt-6 card reveal" style={{ animationDelay: "240ms" }}>
+        <form action={continueSessionFormAction} className="space-y-4">
+          <input type="hidden" name="topic" value={result.topic} />
+          <input type="hidden" name="mode" value={result.mode} />
           <div className="flex flex-wrap items-center gap-3">
             <ContinueButton />
             <Link href="/learn" className="btn btn-ghost">
-              別のトピックで学習
+              別のトピックへ
             </Link>
           </div>
         </form>

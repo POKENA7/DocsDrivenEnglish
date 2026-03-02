@@ -1,6 +1,6 @@
 import SessionCompletePage from "../../_components/SessionCompletePage";
 
-import { getSessionSnapshot } from "@/server/quiz/query";
+import { getSessionResult } from "@/server/quiz/query";
 
 type Params = {
   sessionId: string;
@@ -12,7 +12,7 @@ type PageProps = {
 
 export default async function LearnSessionComplete({ params }: PageProps) {
   const { sessionId } = await params;
-  const session = await getSessionSnapshot(sessionId);
+  const result = await getSessionResult(sessionId);
 
-  return <SessionCompletePage sessionId={sessionId} topic={session.topic} mode={session.mode} />;
+  return <SessionCompletePage result={result} sessionId={sessionId} />;
 }
