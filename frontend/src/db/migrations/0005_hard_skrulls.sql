@@ -1,0 +1,1 @@
+ALTER TABLE `review_queue` ADD `interval_days` integer DEFAULT 1 NOT NULL;
