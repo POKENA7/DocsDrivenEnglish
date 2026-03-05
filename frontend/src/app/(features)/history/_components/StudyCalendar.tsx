@@ -28,7 +28,7 @@ export default function StudyCalendar({ allCounts }: Props) {
   return (
     <div className="card-compact reveal" style={{ animationDelay: "260ms" }}>
       <p className="text-xs text-muted-foreground">月別カレンダー</p>
-      <div className="mt-3 flex flex-col items-start gap-3">
+      <div className="mt-3 flex flex-col items-center gap-4">
         <Calendar
           month={month}
           onMonthChange={setMonth}
@@ -40,9 +40,12 @@ export default function StudyCalendar({ allCounts }: Props) {
           }}
           className="p-0"
         />
-        <p className="text-sm text-muted-foreground">
-          この月の問題数: <span className="font-semibold text-foreground">{monthTotal}</span> 問
-        </p>
+        <div className="flex w-full items-center justify-center gap-2 border-t border-border pt-3">
+          <span className="text-xs text-muted-foreground">この月の問題数</span>
+          <span className="rounded-full bg-primary/15 px-2.5 py-0.5 text-sm font-semibold tabular-nums text-primary">
+            {monthTotal} 問
+          </span>
+        </div>
       </div>
     </div>
   );
