@@ -127,7 +127,7 @@ describe("review queue", () => {
       const first = session.questions[0]!;
 
       // update().returning() が review_queue エントリを返すよう設定
-      const expectedNextAt = Date.now() + 3 * 24 * 60 * 60 * 1000; // intervalDays=1 → 2倍 → 2日後（モックは直接返す）
+      const expectedNextAt = Date.now() + 2 * 24 * 60 * 60 * 1000; // intervalDays=1 → 2倍 → 2日後（モックは直接返す）
       reviewQueueReturnRows = [{ id: "review-id", nextReviewAt: expectedNextAt }];
 
       // correctIndex = 0 なので selectedIndex = 0 は正解
