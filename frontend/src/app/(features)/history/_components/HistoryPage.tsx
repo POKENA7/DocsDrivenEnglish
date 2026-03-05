@@ -1,9 +1,14 @@
 import { requireUserId } from "@/lib/auth";
-import { getHistorySummaryQuery } from "@/server/history/query";
+import { getDailyAttemptCountsQuery, getHistorySummaryQuery } from "@/server/history/query";
+
+import StudyCalendar from "./StudyCalendar";
 
 export default async function HistoryPage() {
   const userId = await requireUserId();
-  const summary = await getHistorySummaryQuery(userId);
+  const [summary, dailyCounts] = await Promise.all([
+    getHistorySummaryQuery(userId),
+    getDailyAttemptCountsQuery(userId),
+  ]);
 
   const correctRatePercent = Math.round(summary.correctRate * 100);
 
@@ -27,6 +32,10 @@ export default async function HistoryPage() {
           <p className="text-xs text-muted-foreground">継続学習日数</p>
           <p className="mt-1 text-lg font-semibold tracking-tight">{summary.studyDays}</p>
         </div>
+      </section>
+
+      <section className="mt-6">
+        <StudyCalendar allCounts={dailyCounts} />
       </section>
     </main>
   );
