@@ -59,14 +59,17 @@ const continueSessionInput = z.object({
 /*  Server Actions                                                     */
 /* ------------------------------------------------------------------ */
 
-export async function startSessionFormAction(formData: FormData): Promise<void> {
+export async function startSessionFormAction(
+  _prevState: { error: string | null },
+  formData: FormData,
+): Promise<{ error: string | null }> {
   const parsed = startSessionInput.safeParse({
     topic: formData.get("topic") ?? "",
     mode: formData.get("mode") ?? "word",
     questionCount: formData.get("questionCount") ?? 10,
     reviewQuestionCount: formData.get("reviewQuestionCount") ?? 0,
   });
-  if (!parsed.success) return;
+  if (!parsed.success) return { error: "入力値が不正です。" };
 
   const userId = await requireUserId();
   const session = await startQuizSession({ ...parsed.data, userId });
@@ -99,12 +102,15 @@ export async function startSharedSessionFormAction(
   }
 }
 
-export async function continueSessionFormAction(formData: FormData): Promise<void> {
+export async function continueSessionFormAction(
+  _prevState: { error: string | null },
+  formData: FormData,
+): Promise<{ error: string | null }> {
   const parsed = continueSessionInput.safeParse({
     topic: formData.get("topic") ?? "",
     mode: formData.get("mode") ?? "word",
   });
-  if (!parsed.success) return;
+  if (!parsed.success) return { error: "入力値が不正です。" };
 
   const userId = await requireUserId();
   const session = await startQuizSession({ ...parsed.data, userId });

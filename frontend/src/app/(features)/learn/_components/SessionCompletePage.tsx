@@ -1,9 +1,5 @@
-import Link from "next/link";
-
 import type { SessionResult } from "@/server/quiz/query";
-import { continueSessionFormAction } from "../_api/actions";
-
-import ContinueButton from "./ContinueButton";
+import ContinueForm from "./ContinueForm";
 
 export default function SessionCompletePage(props: { result: SessionResult; sessionId: string }) {
   const { result } = props;
@@ -55,16 +51,7 @@ export default function SessionCompletePage(props: { result: SessionResult; sess
       </section>
 
       <section className="mt-6 card reveal" style={{ animationDelay: "240ms" }}>
-        <form action={continueSessionFormAction} className="space-y-4">
-          <input type="hidden" name="topic" value={result.topic} />
-          <input type="hidden" name="mode" value={result.mode} />
-          <div className="flex flex-wrap items-center gap-3">
-            <ContinueButton />
-            <Link href="/learn" className="btn btn-ghost">
-              別のトピックへ
-            </Link>
-          </div>
-        </form>
+        <ContinueForm topic={result.topic} mode={result.mode} />
       </section>
     </main>
   );

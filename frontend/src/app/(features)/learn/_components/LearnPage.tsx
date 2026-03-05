@@ -13,6 +13,7 @@ export default function LearnPage({ dueCount }: { dueCount: number }) {
   const [tab, setTab] = useState<Tab>("ai");
   const [questionCount, setQuestionCount] = useState(10);
   const [reviewQuestionCount, setReviewQuestionCount] = useState(2);
+  const [aiState, aiAction] = useActionState(startSessionFormAction, { error: null });
   const [sharedState, sharedAction] = useActionState(startSharedSessionFormAction, {
     error: null,
   });
@@ -71,7 +72,7 @@ export default function LearnPage({ dueCount }: { dueCount: number }) {
 
       {/* AI 生成タブ */}
       {tab === "ai" && (
-        <form action={startSessionFormAction} className="mt-4 space-y-6">
+        <form action={aiAction} className="mt-4 space-y-6">
           <section className="card reveal" style={{ animationDelay: "80ms" }}>
             <div className="space-y-2">
               <label className="text-sm font-medium" htmlFor="topic">
@@ -97,6 +98,15 @@ export default function LearnPage({ dueCount }: { dueCount: number }) {
               onQuestionCountChange={setQuestionCount}
               onReviewQuestionCountChange={setReviewQuestionCount}
             />
+
+            {aiState.error && (
+              <div
+                className="mt-4 rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive"
+                role="alert"
+              >
+                {aiState.error}
+              </div>
+            )}
 
             <div className="mt-6 flex items-center gap-3">
               <SubmitButton />
