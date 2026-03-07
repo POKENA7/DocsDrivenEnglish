@@ -57,7 +57,7 @@ describe("session form actions", () => {
     vi.mocked(startSharedQuizSession).mockResolvedValue({ sessionId: "shared-1" } as never);
   });
 
-  it("questionCount が上限超過でも 10 にフォールバックし reviewQuestionCount を 9 に調整する", async () => {
+  it("questionCount が上限超過時にフォールバックし reviewQuestionCount も調整する", async () => {
     const formData = createFormData({
       topic: "  React Hooks  ",
       mode: "word",

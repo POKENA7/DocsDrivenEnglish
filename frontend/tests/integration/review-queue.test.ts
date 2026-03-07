@@ -176,10 +176,10 @@ describe("review queue", () => {
       expect(result.isCorrect).toBe(true);
       expect(result.isReviewRegistered).toBeUndefined();
       expect(result.reviewNextAt).toBe(expectedNextAt);
-      expect(renderSql(reviewQueueUpdateSetPayload?.intervalDays)).toBe(
+      expect(stringifySqlExpression(reviewQueueUpdateSetPayload?.intervalDays)).toBe(
         "MIN(interval_days * 2, 30)",
       );
-      expect(renderSql(reviewQueueUpdateSetPayload?.nextReviewAt)).toBe(
+      expect(stringifySqlExpression(reviewQueueUpdateSetPayload?.nextReviewAt)).toBe(
         "1700000000000 + MIN(interval_days * 2, 30) * 86400000",
       );
     });
@@ -233,7 +233,7 @@ describe("review queue", () => {
   });
 });
 
-function renderSql(value: unknown): string {
+function stringifySqlExpression(value: unknown): string {
   if (!value || typeof value !== "object" || !("queryChunks" in value)) return String(value);
 
   const queryChunks = (value as { queryChunks: unknown[] }).queryChunks;
