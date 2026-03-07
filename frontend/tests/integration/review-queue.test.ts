@@ -12,6 +12,8 @@ const insertRowsHistory: Array<Array<Record<string, unknown>>> = [];
 let reviewQueueUpsertConfig: Record<string, unknown> | null = null;
 let reviewQueueUpdateSetPayload: Record<string, unknown> | null = null;
 
+const FIXED_NOW_MS = 1_700_000_000_000;
+
 vi.mock("@opennextjs/cloudflare", () => ({
   getCloudflareContext: () => ({ env: { DB: {} } }),
 }));
@@ -112,7 +114,7 @@ describe("review queue", () => {
 
   describe("submitQuizAnswer", () => {
     it("不正解時に isReviewRegistered: true を返す", async () => {
-      vi.spyOn(Date, "now").mockReturnValue(1_700_000_000_000);
+      vi.spyOn(Date, "now").mockReturnValue(FIXED_NOW_MS);
       const session = await startQuizSession({
         topic: "React Hooks",
         mode: "word",
@@ -142,18 +144,18 @@ describe("review queue", () => {
         questionId: first.questionId,
         intervalDays: 1,
         wrongCount: 1,
-        nextReviewAt: 1_700_000_000_000 + 24 * 60 * 60 * 1000,
+        nextReviewAt: FIXED_NOW_MS + 24 * 60 * 60 * 1000,
       });
       expect(reviewQueueUpsertConfig).toMatchObject({
         set: {
-          nextReviewAt: 1_700_000_000_000 + 24 * 60 * 60 * 1000,
+          nextReviewAt: FIXED_NOW_MS + 24 * 60 * 60 * 1000,
           intervalDays: 1,
         },
       });
     });
 
     it("正解時かつ review_queue エントリがある場合 reviewNextAt を返す", async () => {
-      vi.spyOn(Date, "now").mockReturnValue(1_700_000_000_000);
+      vi.spyOn(Date, "now").mockReturnValue(FIXED_NOW_MS);
       const session = await startQuizSession({
         topic: "React Hooks",
         mode: "word",
@@ -180,7 +182,7 @@ describe("review queue", () => {
         "MIN(interval_days * 2, 30)",
       );
       expect(stringifySqlExpression(reviewQueueUpdateSetPayload?.nextReviewAt)).toBe(
-        "1700000000000 + MIN(interval_days * 2, 30) * 86400000",
+        `${FIXED_NOW_MS} + MIN(interval_days * 2, 30) * 86400000`,
       );
     });
 
@@ -236,6 +238,8 @@ describe("review queue", () => {
 function stringifySqlExpression(value: unknown): string {
   if (!value || typeof value !== "object" || !("queryChunks" in value)) return String(value);
 
+  // Drizzle の SQL expression は queryChunks に文字列断片・カラム参照・数値が混在するため、
+  // テストではそれらを直列化して更新式の内容を比較する。
   const queryChunks = (value as { queryChunks: unknown[] }).queryChunks;
   return queryChunks
     .map((chunk) => {
