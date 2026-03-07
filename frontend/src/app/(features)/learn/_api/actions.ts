@@ -76,9 +76,9 @@ export async function startSessionFormAction(
 
   const userId = await requireUserId();
   const session = await startQuizSession({
-    displayTopic: parsed.data.topic,
+    topic: parsed.data.topic,
     sourceType: parsed.data.articleKey ? "hn_trend" : "manual",
-    sourceKey: parsed.data.articleKey,
+    articleKey: parsed.data.articleKey,
     mode: parsed.data.mode,
     questionCount: parsed.data.questionCount,
     reviewQuestionCount: parsed.data.reviewQuestionCount,

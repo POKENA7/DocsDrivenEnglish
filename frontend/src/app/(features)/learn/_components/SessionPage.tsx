@@ -36,7 +36,7 @@ export default function SessionPage({ session }: { session: SessionSnapshot }) {
             </p>
           </div>
 
-          <p className="text-xs text-muted-foreground">{session.displayTopic}</p>
+          <p className="text-xs text-muted-foreground">{session.topic}</p>
         </div>
 
         <SessionProgress attemptCount={attemptCount} correctCount={correctCount} />

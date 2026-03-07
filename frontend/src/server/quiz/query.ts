@@ -14,10 +14,6 @@ import { and, eq, inArray, lte } from "drizzle-orm";
 import { ApiError } from "./errors";
 import type { QuestionRecord, ReviewQuestionRow, SessionRecord } from "./types";
 
-function resolveDisplayTopic(topic: string, displayTopic: string | null): string {
-  return displayTopic ?? topic;
-}
-
 /**
  * 期限切れの復習問題を reviewQueue から取得する共通ヘルパー。
  * session.ts / shared-session.ts の両方から利用される。
@@ -98,14 +94,14 @@ export async function getSessionSnapshot(sessionId: string): Promise<SessionReco
 
   return {
     sessionId: session.sessionId,
-    displayTopic: resolveDisplayTopic(session.topic, session.displayTopic),
+    topic: session.topic,
     mode: session.mode as SessionRecord["mode"],
     questions,
   };
 }
 
 export type SessionResult = {
-  displayTopic: string;
+  topic: string;
   mode: "word" | "reading";
   totalCount: number;
   correctCount: number;
@@ -157,7 +153,7 @@ export async function getSessionResult(sessionId: string): Promise<SessionResult
   const correctCount = items.filter((item) => item.isCorrect).length;
 
   return {
-    displayTopic: resolveDisplayTopic(session.topic, session.displayTopic),
+    topic: session.topic,
     mode: session.mode as SessionResult["mode"],
     totalCount: items.length,
     correctCount,

@@ -132,22 +132,8 @@
           "notNull": true,
           "autoincrement": false
         },
-        "display_topic": {
-          "name": "display_topic",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
         "source_type": {
           "name": "source_type",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "source_key": {
-          "name": "source_key",
           "type": "text",
           "primaryKey": false,
           "notNull": false,
@@ -279,22 +265,8 @@
           "notNull": true,
           "autoincrement": false
         },
-        "display_topic": {
-          "name": "display_topic",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
         "source_type": {
           "name": "source_type",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "source_key": {
-          "name": "source_key",
           "type": "text",
           "primaryKey": false,
           "notNull": false,

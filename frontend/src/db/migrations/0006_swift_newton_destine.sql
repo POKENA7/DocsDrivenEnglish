@@ -10,9 +10,5 @@ CREATE TABLE `topic_suggestions_cache` (
 	`cached_at` integer NOT NULL
 );
 --> statement-breakpoint
-ALTER TABLE `questions` ADD `display_topic` text;--> statement-breakpoint
 ALTER TABLE `questions` ADD `source_type` text;--> statement-breakpoint
-ALTER TABLE `questions` ADD `source_key` text;--> statement-breakpoint
-ALTER TABLE `sessions` ADD `display_topic` text;--> statement-breakpoint
 ALTER TABLE `sessions` ADD `source_type` text;--> statement-breakpoint
-ALTER TABLE `sessions` ADD `source_key` text;

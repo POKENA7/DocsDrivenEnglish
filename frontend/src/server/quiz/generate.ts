@@ -92,13 +92,13 @@ function normalizeGeneratedItems(items: GeneratedQuizItem[]): GeneratedQuizItem[
 }
 
 async function generateQuizItemsFromArticleContent(input: {
-  displayTopic: string;
+  topic: string;
   articleContent: string;
   mode: Mode;
   questionCount: number;
 }): Promise<GeneratedQuizItem[]> {
   console.log("[quiz] generating quiz items from article", {
-    displayTopic: input.displayTopic,
+    topic: input.topic,
     questionCount: input.questionCount,
   });
 
@@ -109,7 +109,7 @@ async function generateQuizItemsFromArticleContent(input: {
   const base =
     "あなたは『英語と技術の両方を学べるプログラマー向け英語学習サイト』のクイズ作成者です。\n" +
     "以下のトレンド記事本文を教材として、記事内容に基づく英語クイズを作成してください。\n" +
-    `記事タイトル: ${input.displayTopic}\n` +
+    `記事タイトル: ${input.topic}\n` +
     `教材本文:\n${input.articleContent}\n` +
     "共通要件（厳守）:\n" +
     `- 必ず${input.questionCount}問作ること。\n` +
@@ -142,25 +142,25 @@ async function generateQuizItemsFromArticleContent(input: {
 }
 
 export async function generateQuizItemsFromSource(input: {
-  displayTopic: string;
+  topic: string;
   sourceType: SourceType;
-  sourceKey: string | null;
+  articleKey: string | null;
   mode: Mode;
   questionCount: number;
 }): Promise<GeneratedQuizItem[]> {
   if (input.sourceType === "hn_trend") {
-    if (!input.sourceKey) {
-      throw new Error("sourceKey is required for hn_trend");
+    if (!input.articleKey) {
+      throw new Error("articleKey is required for hn_trend");
     }
 
-    const article = await fetchHnTrendArticleContent(input.sourceKey);
+    const article = await fetchHnTrendArticleContent(input.articleKey);
     return generateQuizItemsFromArticleContent({
-      displayTopic: article.displayTopic,
+      topic: article.title,
       articleContent: article.content,
       mode: input.mode,
       questionCount: input.questionCount,
     });
   }
 
-  return generateQuizItemsFromTopic(input.displayTopic, input.mode, input.questionCount);
+  return generateQuizItemsFromTopic(input.topic, input.mode, input.questionCount);
 }

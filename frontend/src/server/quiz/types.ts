@@ -26,16 +26,15 @@ export type QuestionRecord = {
 
 export type SessionRecord = {
   sessionId: string;
-  displayTopic: string;
+  topic: string;
   mode: Mode;
   questions: QuestionRecord[];
 };
 
 export type StartSessionResponse = {
   sessionId: string;
-  displayTopic: string;
+  topic: string;
   sourceType: SourceType;
-  sourceKey: string | null;
   questions: Array<{
     questionId: string;
     prompt: string;

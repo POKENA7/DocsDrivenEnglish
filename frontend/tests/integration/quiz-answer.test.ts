@@ -111,9 +111,9 @@ describe("submitQuizAnswer", () => {
 
   it("scores answer", async () => {
     const session = await startQuizSession({
-      displayTopic: "React Hooks",
+      topic: "React Hooks",
       sourceType: "manual",
-      sourceKey: null,
+      articleKey: null,
       mode: "word",
       userId: "test-user-id",
     });
@@ -133,9 +133,9 @@ describe("submitQuizAnswer", () => {
 
   it("正解インデックスを渡すと isCorrect: true を返す", async () => {
     const session = await startQuizSession({
-      displayTopic: "React Hooks",
+      topic: "React Hooks",
       sourceType: "manual",
-      sourceKey: null,
+      articleKey: null,
       mode: "word",
       userId: "test-user-id",
     });
@@ -155,9 +155,9 @@ describe("submitQuizAnswer", () => {
 
   it("不正解インデックスを渡すと isCorrect: false を返す", async () => {
     const session = await startQuizSession({
-      displayTopic: "React Hooks",
+      topic: "React Hooks",
       sourceType: "manual",
-      sourceKey: null,
+      articleKey: null,
       mode: "word",
       userId: "test-user-id",
     });
@@ -177,9 +177,9 @@ describe("submitQuizAnswer", () => {
 
   it("selectedIndex が文字列型で渡されても正誤判定が正しく動作する（型強制バグの修正確認）", async () => {
     const session = await startQuizSession({
-      displayTopic: "React Hooks",
+      topic: "React Hooks",
       sourceType: "manual",
-      sourceKey: null,
+      articleKey: null,
       mode: "word",
       userId: "test-user-id",
     });
@@ -211,9 +211,9 @@ describe("submitQuizAnswer", () => {
 
   it("questionId と sessionId が不一致の場合は BAD_REQUEST エラーを投げる", async () => {
     const session = await startQuizSession({
-      displayTopic: "React Hooks",
+      topic: "React Hooks",
       sourceType: "manual",
-      sourceKey: null,
+      articleKey: null,
       mode: "word",
       userId: "test-user-id",
     });

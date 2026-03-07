@@ -38,9 +38,9 @@ describe("startQuizSession errors", () => {
   it("throws ApiError when topic is empty", async () => {
     await expect(
       startQuizSession({
-        displayTopic: "",
+        topic: "",
         sourceType: "manual",
-        sourceKey: null,
+        articleKey: null,
         mode: "word",
         userId: "test-user",
       }),
@@ -50,9 +50,9 @@ describe("startQuizSession errors", () => {
   it("throws ApiError when topic is whitespace only", async () => {
     await expect(
       startQuizSession({
-        displayTopic: "   ",
+        topic: "   ",
         sourceType: "manual",
-        sourceKey: null,
+        articleKey: null,
         mode: "word",
         userId: "test-user",
       }),
@@ -62,9 +62,9 @@ describe("startQuizSession errors", () => {
   it("throws ApiError when LLM returns no items", async () => {
     await expect(
       startQuizSession({
-        displayTopic: "React Hooks",
+        topic: "React Hooks",
         sourceType: "manual",
-        sourceKey: null,
+        articleKey: null,
         mode: "word",
         userId: "test-user",
       }),

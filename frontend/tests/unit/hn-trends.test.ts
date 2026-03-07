@@ -86,8 +86,8 @@ describe("hn-trends", () => {
     const { fetchHnTrendArticleContent } = await import("@/server/suggestions/hn-trends");
     const article = await fetchHnTrendArticleContent("hn-1234567890000-0");
 
-    expect(article.displayTopic).toBe("React 20");
-    expect(article.sourceKey).toBe("hn-1234567890000-0");
+    expect(article.title).toBe("React 20");
+    expect(article.articleKey).toBe("hn-1234567890000-0");
     expect(article.content).toContain("React 20 introduces compiler improvements.");
   });
 });

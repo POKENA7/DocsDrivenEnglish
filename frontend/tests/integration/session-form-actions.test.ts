@@ -56,9 +56,9 @@ describe("startSessionFormAction", () => {
     );
 
     expect(startQuizSessionMock).toHaveBeenCalledWith({
-      displayTopic: "Latest React Compiler",
+      topic: "Latest React Compiler",
       sourceType: "hn_trend",
-      sourceKey: "hn-1234567890000-1",
+      articleKey: "hn-1234567890000-1",
       mode: "reading",
       questionCount: 5,
       reviewQuestionCount: 2,
@@ -79,9 +79,9 @@ describe("startSessionFormAction", () => {
     );
 
     expect(startQuizSessionMock).toHaveBeenCalledWith({
-      displayTopic: "React Hooks",
+      topic: "React Hooks",
       sourceType: "manual",
-      sourceKey: null,
+      articleKey: null,
       mode: "word",
       questionCount: 4,
       reviewQuestionCount: 3,

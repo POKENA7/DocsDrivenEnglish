@@ -176,8 +176,8 @@ async function resolveHnTrendArticle(articleKey: string): Promise<HnTrendArticle
 }
 
 export async function fetchHnTrendArticleContent(articleKey: string): Promise<{
-  displayTopic: string;
-  sourceKey: string;
+  title: string;
+  articleKey: string;
   sourceUrl: string;
   content: string;
 }> {
@@ -200,8 +200,8 @@ export async function fetchHnTrendArticleContent(articleKey: string): Promise<{
   }
 
   return {
-    displayTopic: article.title,
-    sourceKey: article.articleKey,
+    title: article.title,
+    articleKey: article.articleKey,
     sourceUrl: article.url,
     content,
   };

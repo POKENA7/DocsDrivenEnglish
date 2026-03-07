@@ -10,16 +10,16 @@ import { fetchDueReviewQuestions } from "./query";
 import type { Mode, SourceType, StartSessionResponse } from "./types";
 
 export async function startQuizSession(input: {
-  displayTopic: string;
+  topic: string;
   sourceType: SourceType;
-  sourceKey: string | null;
+  articleKey: string | null;
   mode: Mode;
   questionCount?: number;
   reviewQuestionCount?: number;
   userId: string;
 }): Promise<StartSessionResponse> {
-  const displayTopic = input.displayTopic.trim();
-  if (!displayTopic) {
+  const topic = input.topic.trim();
+  if (!topic) {
     throw new ApiError("BAD_REQUEST", "技術トピックを入力してください");
   }
 
@@ -39,9 +39,9 @@ export async function startQuizSession(input: {
   const generated =
     newQuestionCount > 0
       ? await generateQuizItemsFromSource({
-          displayTopic,
+          topic,
           sourceType: input.sourceType,
-          sourceKey: input.sourceKey,
+          articleKey: input.articleKey,
           mode: input.mode,
           questionCount: newQuestionCount,
         })
@@ -65,10 +65,8 @@ export async function startQuizSession(input: {
   await db.insert(sessionsTable).values({
     sessionId,
     userId: input.userId,
-    topic: displayTopic,
-    displayTopic,
+    topic,
     sourceType: input.sourceType,
-    sourceKey: input.sourceKey,
     mode: input.mode,
     questionIdsJson: JSON.stringify(allQuestionIds),
     createdAt: now,
@@ -80,10 +78,8 @@ export async function startQuizSession(input: {
         questionId: q.questionId,
         userId: input.userId,
         mode: input.mode,
-        topic: displayTopic,
-        displayTopic,
+        topic,
         sourceType: input.sourceType,
-        sourceKey: input.sourceKey,
         prompt: q.prompt,
         choicesJson: JSON.stringify(q.choices),
         correctIndex: q.correctIndex,
@@ -106,9 +102,8 @@ export async function startQuizSession(input: {
 
   return {
     sessionId,
-    displayTopic,
+    topic,
     sourceType: input.sourceType,
-    sourceKey: input.sourceKey,
     questions: allQuestions.map((q) => ({
       questionId: q.questionId,
       prompt: q.prompt,
@@ -126,9 +121,7 @@ export async function startSingleReviewSession(input: {
   const [row] = await db
     .select({
       topic: questionsTable.topic,
-      displayTopic: questionsTable.displayTopic,
       sourceType: questionsTable.sourceType,
-      sourceKey: questionsTable.sourceKey,
       mode: questionsTable.mode,
     })
     .from(questionsTable)
@@ -143,9 +136,7 @@ export async function startSingleReviewSession(input: {
     sessionId,
     userId: input.userId,
     topic: row.topic,
-    displayTopic: row.displayTopic ?? row.topic,
     sourceType: row.sourceType,
-    sourceKey: row.sourceKey,
     mode: row.mode,
     questionIdsJson: JSON.stringify([input.questionId]),
     createdAt: new Date(),

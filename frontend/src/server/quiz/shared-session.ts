@@ -8,7 +8,7 @@ import { ApiError } from "./errors";
 import { fetchDueReviewQuestions } from "./query";
 import type { Mode, StartSessionResponse } from "./types";
 
-const SHARED_DISPLAY_TOPIC = "他のユーザーが作成したクイズ";
+const SHARED_TOPIC = "他のユーザーが作成したクイズ";
 
 /**
  * 他のユーザーが作成した問題（questions テーブル）からランダムに取得してセッションを開始する。
@@ -71,10 +71,8 @@ export async function startSharedQuizSession(input: {
   await db.insert(sessionsTable).values({
     sessionId,
     userId: input.userId,
-    topic: SHARED_DISPLAY_TOPIC,
-    displayTopic: SHARED_DISPLAY_TOPIC,
+    topic: SHARED_TOPIC,
     sourceType: "shared",
-    sourceKey: null,
     mode: input.mode,
     questionIdsJson: JSON.stringify(allQuestionIds),
     createdAt: now,
@@ -96,9 +94,8 @@ export async function startSharedQuizSession(input: {
 
   return {
     sessionId,
-    displayTopic: SHARED_DISPLAY_TOPIC,
+    topic: SHARED_TOPIC,
     sourceType: "shared",
-    sourceKey: null,
     questions: allQuestions.map((q) => ({
       questionId: q.questionId,
       prompt: q.prompt,

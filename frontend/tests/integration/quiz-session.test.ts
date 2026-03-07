@@ -54,9 +54,9 @@ describe("startQuizSession", () => {
   it("throws ApiError for empty topic", async () => {
     await expect(
       startQuizSession({
-        displayTopic: "",
+        topic: "",
         sourceType: "manual",
-        sourceKey: null,
+        articleKey: null,
         mode: "word",
         userId: "test-user",
       }),
@@ -65,24 +65,24 @@ describe("startQuizSession", () => {
 
   it("returns valid session for valid input", async () => {
     const result = await startQuizSession({
-      displayTopic: "React Hooks",
+      topic: "React Hooks",
       sourceType: "manual",
-      sourceKey: null,
+      articleKey: null,
       mode: "word",
       userId: "test-user",
     });
 
     expect(result.sessionId).toBeTruthy();
-    expect(result.displayTopic).toBe("React Hooks");
+    expect(result.topic).toBe("React Hooks");
     expect(result.sourceType).toBe("manual");
     expect(Array.isArray(result.questions)).toBe(true);
   });
 
   it("respects custom questionCount", async () => {
     const result = await startQuizSession({
-      displayTopic: "React Hooks",
+      topic: "React Hooks",
       sourceType: "manual",
-      sourceKey: null,
+      articleKey: null,
       mode: "word",
       questionCount: 3,
       userId: "test-user",

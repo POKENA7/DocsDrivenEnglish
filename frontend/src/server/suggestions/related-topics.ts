@@ -8,7 +8,7 @@ import { sessions, topicSuggestionsCache } from "@/db/schema";
 import { createOpenAIParsedText } from "@/lib/openaiClient";
 
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
-const SHARED_DISPLAY_TOPIC = "他のユーザーが作成したクイズ";
+const SHARED_TOPIC = "他のユーザーが作成したクイズ";
 const RELATED_TOPICS_MODEL = "gpt-5-mini";
 
 const relatedTopicsSchema = z.object({
@@ -37,21 +37,20 @@ async function fetchRecentManualTopics(userId: string): Promise<string[]> {
   const db = getDb();
   const rows = await db
     .select({
-      displayTopic: sessions.displayTopic,
       topic: sessions.topic,
     })
     .from(sessions)
     .where(
       and(
         eq(sessions.userId, userId),
-        ne(sessions.topic, SHARED_DISPLAY_TOPIC),
+        ne(sessions.topic, SHARED_TOPIC),
         or(eq(sessions.sourceType, "manual"), isNull(sessions.sourceType)),
       ),
     )
     .orderBy(desc(sessions.createdAt))
     .limit(6);
 
-  return [...new Set(rows.map((row) => row.displayTopic ?? row.topic).filter(Boolean))].slice(0, 5);
+  return [...new Set(rows.map((row) => row.topic).filter(Boolean))].slice(0, 5);
 }
 
 export async function getRelatedTopicSuggestions(userId: string): Promise<string[]> {
