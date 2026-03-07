@@ -26,17 +26,24 @@ import type {
 /* ------------------------------------------------------------------ */
 const questionCountSchema = z.coerce.number().int().min(1).max(20).catch(10);
 const reviewQuestionCountSchema = z.coerce.number().int().min(0).catch(0);
+const articleKeySchema = z
+  .string()
+  .trim()
+  .max(100)
+  .regex(/^$|^hn-\d+-\d+$/, "articleKey が不正です");
 
 const startSessionInput = z
   .object({
-    topic: z.string().trim().min(1).max(200),
+    topic: z.string().trim().min(1).max(300),
+    articleKey: articleKeySchema,
     mode: modeSchema,
     questionCount: questionCountSchema,
     reviewQuestionCount: reviewQuestionCountSchema,
   })
-  .transform((d) => ({
-    ...d,
-    reviewQuestionCount: Math.min(d.reviewQuestionCount, d.questionCount - 1),
+  .transform((data) => ({
+    ...data,
+    articleKey: data.articleKey || null,
+    reviewQuestionCount: Math.min(data.reviewQuestionCount, data.questionCount - 1),
   }));
 
 const sharedSessionInput = z
@@ -60,6 +67,7 @@ export async function startSessionFormAction(
 ): Promise<{ error: string | null }> {
   const parsed = startSessionInput.safeParse({
     topic: formData.get("topic") ?? "",
+    articleKey: formData.get("articleKey") ?? "",
     mode: formData.get("mode") ?? "word",
     questionCount: formData.get("questionCount") ?? 10,
     reviewQuestionCount: formData.get("reviewQuestionCount") ?? 0,
@@ -67,7 +75,15 @@ export async function startSessionFormAction(
   if (!parsed.success) return { error: "入力値が不正です。" };
 
   const userId = await requireUserId();
-  const session = await startQuizSession({ ...parsed.data, userId });
+  const session = await startQuizSession({
+    displayTopic: parsed.data.topic,
+    sourceType: parsed.data.articleKey ? "hn_trend" : "manual",
+    sourceKey: parsed.data.articleKey,
+    mode: parsed.data.mode,
+    questionCount: parsed.data.questionCount,
+    reviewQuestionCount: parsed.data.reviewQuestionCount,
+    userId,
+  });
   redirect(`/learn/${session.sessionId}`);
 }
 

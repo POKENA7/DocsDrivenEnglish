@@ -37,19 +37,37 @@ vi.mock("@/lib/openaiClient", () => ({
 describe("startQuizSession errors", () => {
   it("throws ApiError when topic is empty", async () => {
     await expect(
-      startQuizSession({ topic: "", mode: "word", userId: "test-user" }),
+      startQuizSession({
+        displayTopic: "",
+        sourceType: "manual",
+        sourceKey: null,
+        mode: "word",
+        userId: "test-user",
+      }),
     ).rejects.toThrow(ApiError);
   });
 
   it("throws ApiError when topic is whitespace only", async () => {
     await expect(
-      startQuizSession({ topic: "   ", mode: "word", userId: "test-user" }),
+      startQuizSession({
+        displayTopic: "   ",
+        sourceType: "manual",
+        sourceKey: null,
+        mode: "word",
+        userId: "test-user",
+      }),
     ).rejects.toThrow(ApiError);
   });
 
   it("throws ApiError when LLM returns no items", async () => {
     await expect(
-      startQuizSession({ topic: "React Hooks", mode: "word", userId: "test-user" }),
+      startQuizSession({
+        displayTopic: "React Hooks",
+        sourceType: "manual",
+        sourceKey: null,
+        mode: "word",
+        userId: "test-user",
+      }),
     ).rejects.toThrow(ApiError);
   });
 });

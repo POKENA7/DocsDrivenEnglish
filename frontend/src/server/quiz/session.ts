@@ -4,20 +4,22 @@ import { getDb } from "@/db/client";
 import { questions as questionsTable, sessions as sessionsTable } from "@/db/schema";
 import { eq } from "drizzle-orm";
 
-import { generateQuizItemsFromTopic } from "./generate";
+import { generateQuizItemsFromSource } from "./generate";
 import { ApiError } from "./errors";
 import { fetchDueReviewQuestions } from "./query";
-import type { Mode, StartSessionResponse } from "./types";
+import type { Mode, SourceType, StartSessionResponse } from "./types";
 
 export async function startQuizSession(input: {
-  topic: string;
+  displayTopic: string;
+  sourceType: SourceType;
+  sourceKey: string | null;
   mode: Mode;
   questionCount?: number;
   reviewQuestionCount?: number;
   userId: string;
 }): Promise<StartSessionResponse> {
-  const topic = input.topic.trim();
-  if (!topic) {
+  const displayTopic = input.displayTopic.trim();
+  if (!displayTopic) {
     throw new ApiError("BAD_REQUEST", "技術トピックを入力してください");
   }
 
@@ -33,11 +35,16 @@ export async function startQuizSession(input: {
   );
   const reviewQuestionIds = reviewQuestionRows.map((r) => r.questionId);
 
-  // 新規 AI 生成問題
   const newQuestionCount = plannedCount - reviewQuestionIds.length;
   const generated =
     newQuestionCount > 0
-      ? await generateQuizItemsFromTopic(topic, input.mode, newQuestionCount)
+      ? await generateQuizItemsFromSource({
+          displayTopic,
+          sourceType: input.sourceType,
+          sourceKey: input.sourceKey,
+          mode: input.mode,
+          questionCount: newQuestionCount,
+        })
       : [];
 
   const newQuestions = generated.map((item) => ({
@@ -53,13 +60,15 @@ export async function startQuizSession(input: {
     throw new ApiError("INTERNAL", "問題の生成に失敗しました");
   }
 
-  // DB 保存: sessions（全問題 ID を JSON 配列で保持）+ questions（新規生成分のみ INSERT）
   const now = new Date();
 
   await db.insert(sessionsTable).values({
     sessionId,
     userId: input.userId,
-    topic,
+    topic: displayTopic,
+    displayTopic,
+    sourceType: input.sourceType,
+    sourceKey: input.sourceKey,
     mode: input.mode,
     questionIdsJson: JSON.stringify(allQuestionIds),
     createdAt: now,
@@ -71,7 +80,10 @@ export async function startQuizSession(input: {
         questionId: q.questionId,
         userId: input.userId,
         mode: input.mode,
-        topic,
+        topic: displayTopic,
+        displayTopic,
+        sourceType: input.sourceType,
+        sourceKey: input.sourceKey,
         prompt: q.prompt,
         choicesJson: JSON.stringify(q.choices),
         correctIndex: q.correctIndex,
@@ -81,7 +93,6 @@ export async function startQuizSession(input: {
     );
   }
 
-  // レスポンス組み立て（復習問題 + 新規問題の順）
   const allQuestions = [
     ...reviewQuestionRows.map((r) => ({
       questionId: r.questionId,
@@ -95,7 +106,9 @@ export async function startQuizSession(input: {
 
   return {
     sessionId,
-    topic,
+    displayTopic,
+    sourceType: input.sourceType,
+    sourceKey: input.sourceKey,
     questions: allQuestions.map((q) => ({
       questionId: q.questionId,
       prompt: q.prompt,
@@ -113,6 +126,9 @@ export async function startSingleReviewSession(input: {
   const [row] = await db
     .select({
       topic: questionsTable.topic,
+      displayTopic: questionsTable.displayTopic,
+      sourceType: questionsTable.sourceType,
+      sourceKey: questionsTable.sourceKey,
       mode: questionsTable.mode,
     })
     .from(questionsTable)
@@ -127,6 +143,9 @@ export async function startSingleReviewSession(input: {
     sessionId,
     userId: input.userId,
     topic: row.topic,
+    displayTopic: row.displayTopic ?? row.topic,
+    sourceType: row.sourceType,
+    sourceKey: row.sourceKey,
     mode: row.mode,
     questionIdsJson: JSON.stringify([input.questionId]),
     createdAt: new Date(),

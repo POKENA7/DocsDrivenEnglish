@@ -8,6 +8,8 @@ import { ApiError } from "./errors";
 import { fetchDueReviewQuestions } from "./query";
 import type { Mode, StartSessionResponse } from "./types";
 
+const SHARED_DISPLAY_TOPIC = "他のユーザーが作成したクイズ";
+
 /**
  * 他のユーザーが作成した問題（questions テーブル）からランダムに取得してセッションを開始する。
  * - トピックによるフィルタは行わない
@@ -64,13 +66,15 @@ export async function startSharedQuizSession(input: {
     throw new ApiError("NOT_FOUND", "まだ他のユーザーが作成したクイズがありません");
   }
 
-  const topic = "他のユーザーが作成したクイズ";
   const now = new Date();
 
   await db.insert(sessionsTable).values({
     sessionId,
     userId: input.userId,
-    topic,
+    topic: SHARED_DISPLAY_TOPIC,
+    displayTopic: SHARED_DISPLAY_TOPIC,
+    sourceType: "shared",
+    sourceKey: null,
     mode: input.mode,
     questionIdsJson: JSON.stringify(allQuestionIds),
     createdAt: now,
@@ -92,7 +96,9 @@ export async function startSharedQuizSession(input: {
 
   return {
     sessionId,
-    topic,
+    displayTopic: SHARED_DISPLAY_TOPIC,
+    sourceType: "shared",
+    sourceKey: null,
     questions: allQuestions.map((q) => ({
       questionId: q.questionId,
       prompt: q.prompt,

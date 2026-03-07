@@ -99,7 +99,9 @@ describe("review queue", () => {
   describe("submitQuizAnswer", () => {
     it("不正解時に isReviewRegistered: true を返す", async () => {
       const session = await startQuizSession({
-        topic: "React Hooks",
+        displayTopic: "React Hooks",
+        sourceType: "manual",
+        sourceKey: null,
         mode: "word",
         userId: "test-user-id",
       });
@@ -120,7 +122,9 @@ describe("review queue", () => {
 
     it("正解時かつ review_queue エントリがある場合 reviewNextAt を返す", async () => {
       const session = await startQuizSession({
-        topic: "React Hooks",
+        displayTopic: "React Hooks",
+        sourceType: "manual",
+        sourceKey: null,
         mode: "word",
         userId: "test-user-id",
       });
@@ -145,7 +149,9 @@ describe("review queue", () => {
 
     it("正解時かつ review_queue エントリがない場合 reviewNextAt は undefined", async () => {
       const session = await startQuizSession({
-        topic: "React Hooks",
+        displayTopic: "React Hooks",
+        sourceType: "manual",
+        sourceKey: null,
         mode: "word",
         userId: "test-user-id",
       });
@@ -177,7 +183,9 @@ describe("review queue", () => {
       });
 
       const session = await startQuizSession({
-        topic: "React Hooks",
+        displayTopic: "React Hooks",
+        sourceType: "manual",
+        sourceKey: null,
         mode: "word",
         questionCount: 3,
         reviewQuestionCount: 1,

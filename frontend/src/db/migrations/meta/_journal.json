@@ -43,6 +43,13 @@
       "when": 1772496761684,
       "tag": "0005_hard_skrulls",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1772895432445,
+      "tag": "0006_swift_newton_destine",
+      "breakpoints": true
     }
   ]
 }

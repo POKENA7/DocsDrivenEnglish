@@ -5,7 +5,7 @@ import { useQuizAnswer } from "./useQuizAnswer";
 
 export type SessionSnapshot = {
   sessionId: string;
-  topic: string;
+  displayTopic: string;
   questions: Array<{
     questionId: string;
     prompt: string;

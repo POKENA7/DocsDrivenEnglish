@@ -10,7 +10,7 @@ export default function SessionCompletePage(props: { result: SessionResult }) {
       <div className="reveal">
         <h1 className="heading-1">セッション完了 🎉</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          {result.topic} — {result.mode} モード
+          {result.displayTopic} — {result.mode} モード
         </p>
       </div>
 

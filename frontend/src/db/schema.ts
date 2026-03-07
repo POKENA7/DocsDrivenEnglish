@@ -4,6 +4,9 @@ export const sessions = sqliteTable("sessions", {
   sessionId: text("session_id").primaryKey(),
   userId: text("user_id").notNull(),
   topic: text("topic").notNull(),
+  displayTopic: text("display_topic"),
+  sourceType: text("source_type"),
+  sourceKey: text("source_key"),
   mode: text("mode").notNull(),
   questionIdsJson: text("question_ids_json").notNull(),
   createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
@@ -14,6 +17,9 @@ export const questions = sqliteTable("questions", {
   userId: text("user_id").notNull(),
   mode: text("mode").notNull(),
   topic: text("topic").notNull(),
+  displayTopic: text("display_topic"),
+  sourceType: text("source_type"),
+  sourceKey: text("source_key"),
   prompt: text("prompt").notNull(),
   choicesJson: text("choices_json").notNull(),
   correctIndex: integer("correct_index").notNull(),
@@ -38,9 +44,21 @@ export const reviewQueue = sqliteTable(
     id: text("id").primaryKey(),
     userId: text("user_id").notNull(),
     questionId: text("question_id").notNull(),
-    nextReviewAt: integer("next_review_at").notNull(), // Unix timestamp ms
+    nextReviewAt: integer("next_review_at").notNull(),
     wrongCount: integer("wrong_count").notNull().default(1),
-    intervalDays: integer("interval_days").notNull().default(1), // スペースド・リペティション用インターバル（日数）
+    intervalDays: integer("interval_days").notNull().default(1),
   },
   (table) => [unique().on(table.userId, table.questionId)],
 );
+
+export const topicSuggestionsCache = sqliteTable("topic_suggestions_cache", {
+  userId: text("user_id").primaryKey(),
+  topics: text("topics").notNull(),
+  cachedAt: integer("cached_at").notNull(),
+});
+
+export const hnTrendCache = sqliteTable("hn_trend_cache", {
+  id: integer("id").primaryKey(),
+  articles: text("articles").notNull(),
+  cachedAt: integer("cached_at").notNull(),
+});

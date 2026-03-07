@@ -22,6 +22,7 @@ const QUESTION_IDS = ["q-1", "q-2", "q-3"];
 const mockSession = {
   sessionId: SESSION_ID,
   topic: "React Hooks",
+  displayTopic: "React Hooks",
   mode: "word",
   questionIdsJson: JSON.stringify(QUESTION_IDS),
 };
@@ -94,7 +95,7 @@ describe("getSessionResult", () => {
 
     const result = await getSessionResult(SESSION_ID);
 
-    expect(result.topic).toBe("React Hooks");
+    expect(result.displayTopic).toBe("React Hooks");
     expect(result.mode).toBe("word");
     expect(result.totalCount).toBe(3);
     expect(result.correctCount).toBe(1);
