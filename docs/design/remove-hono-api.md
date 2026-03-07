@@ -14,16 +14,15 @@
 | 関数 | Hono エンドポイント | 実際の呼ばれ方 |
 |---|---|---|
 | `startQuizSession()` | `POST /api/quiz/session` | Server Action `startSessionFormAction` が直接インポート |
-| `startQuizSession()` | `POST /api/quiz/session` | Server Action `continueSessionFormAction` → `continueSessionQuery` → `honoRpcClient` → **HTTP経由（迂回中）** |
 | `submitQuizAnswer()` | `POST /api/quiz/answer` | Server Action `submitQuizAnswerAction` が直接インポート |
 | `getDueReviewCount()` | ー | Server Component `learn/page.tsx` が直接インポート |
 | `getReviewQueue()` | ー | Server Component `review-queue/page.tsx` が直接インポート |
 
-`continueSessionFormAction` だけが `honoRpcClient`（相対URL `/api`）経由で HTTP リクエストを送っており、他はすべて直接インポートで呼んでいる。
+学習フローは Server Action / Server Component から直接インポートで呼び出す構成に統一する。
 
 ### 問題点
 
-1. **Cloudflare Workers での自己 HTTP fetch が不安定** — 過去に `submitQuizAnswer` で同様の Invalid URL バグを踏んで直接呼び出しに切り替えた。`continueSessionFormAction` にも同じ問題が潜在する
+1. **Cloudflare Workers での自己 HTTP fetch が不安定** — 過去に `submitQuizAnswer` で同様の Invalid URL バグを踏んで直接呼び出しに切り替えた。HTTP レイヤー自体を無くすのが安全
 2. **型の二重管理** — `lib/honoRpcClient.ts` に手動型定義 `HonoRpcClient` があり、`quiz.ts` 本体の型と乖離しやすい（現状すでに `history` エンドポイント定義が残骸化している）
 3. **不要なバンドルサイズ** — Hono 本体・`@hono/zod-validator`・SWR などが残る
 4. **外部クライアントが存在しない** — モバイルアプリ・サードパーティからの HTTP アクセスは現在も将来も予定がない
@@ -73,30 +72,19 @@ Hono の HTTP ルーティングレイヤーを完全に削除し、ビジネス
 
 #### `src/app/(features)/session/_api/actions.ts`
 
-import 元を新しいパスに変更し、`continueSessionFormAction` の `continueSessionQuery` 経由の HTTP 呼び出しを廃止して `startQuizSession` を直接呼ぶ。
+import 元を新しいパスに変更し、学習開始・回答送信の Server Action からビジネスロジックを直接呼ぶ。
 
 ```typescript
 // 変更前
 import { submitQuizAnswer, startQuizSession } from "@/app/api/[[...route]]/quiz";
 
-export async function continueSessionFormAction(formData: FormData): Promise<void> {
-  const session = await continueSessionQuery({ topic, mode }); // honoRpcClient 経由
-  redirect(`/session/${session.sessionId}`);
-}
-
 // 変更後
 import { submitQuizAnswer, startQuizSession } from "./mutations";
-
-export async function continueSessionFormAction(formData: FormData): Promise<void> {
-  const { userId } = await auth();
-  const session = await startQuizSession({ topic, mode, userId: userId ?? "" }); // 直接呼び出し
-  redirect(`/session/${session.sessionId}`);
-}
 ```
 
 #### `src/app/(features)/session/_api/query.ts`
 
-`continueSessionQuery` 関数（`honoRpcClient` 依存）を削除する。ファイルが空になる場合はファイルごと削除。
+HTTP クライアント依存のクエリ関数を削除する。ファイルが空になる場合はファイルごと削除。
 
 #### `src/app/(features)/session/_api/mutations.ts` （新規作成）
 
@@ -164,7 +152,7 @@ src/
       session/
         _api/
           mutations.ts # startQuizSession / submitQuizAnswer / getSessionSnapshot / 型定義（quiz.ts から移動）
-          actions.ts   # startSessionFormAction / continueSessionFormAction / submitQuizAnswerAction
+          actions.ts   # startSessionFormAction / submitQuizAnswerAction
         _utils/
           stripUrlsFromText.ts  # （_utils/ から移動）
         _hooks/
@@ -185,8 +173,8 @@ src/
 1. `session/_api/mutations.ts` を新規作成（`quiz.ts` からビジネスロジック関数・型を移動、Hono ルート削除）
 2. `review-queue/_api/` ディレクトリを作成し `query.ts` を新規作成（`review-queue.ts` から関数を移動、Hono ルート削除）
 3. `session/_utils/stripUrlsFromText.ts` を新規作成（パスのみ変更）
-4. `session/_api/actions.ts` の import パスを更新し、`continueSessionFormAction` を直接呼び出しに変更
-5. `session/_api/query.ts` の `continueSessionQuery` を削除（ファイルが空になれば削除）
+4. `session/_api/actions.ts` の import パスを更新し、Server Action から直接呼び出す構成に統一
+5. `session/_api/query.ts` の HTTP 依存クエリを削除（ファイルが空になれば削除）
 6. `learn/page.tsx` の import パスを更新
 7. `review-queue/page.tsx` の import パスを更新
 8. `session/_hooks/useQuizAnswer.ts` を `useSWRMutation` → `useState` に書き換え

@@ -50,11 +50,6 @@ const sharedSessionInput = z
     reviewQuestionCount: Math.min(d.reviewQuestionCount, d.questionCount - 1),
   }));
 
-const continueSessionInput = z.object({
-  topic: z.string().trim().min(1),
-  mode: modeSchema,
-});
-
 /* ------------------------------------------------------------------ */
 /*  Server Actions                                                     */
 /* ------------------------------------------------------------------ */
@@ -100,21 +95,6 @@ export async function startSharedSessionFormAction(
     }
     throw e;
   }
-}
-
-export async function continueSessionFormAction(
-  _prevState: { error: string | null },
-  formData: FormData,
-): Promise<{ error: string | null }> {
-  const parsed = continueSessionInput.safeParse({
-    topic: formData.get("topic") ?? "",
-    mode: formData.get("mode") ?? "word",
-  });
-  if (!parsed.success) return { error: "入力値が不正です。" };
-
-  const userId = await requireUserId();
-  const session = await startQuizSession({ ...parsed.data, userId });
-  redirect(`/learn/${session.sessionId}`);
 }
 
 export async function submitQuizAnswerAction(

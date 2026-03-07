@@ -8,7 +8,7 @@
 
 ## 背景・課題
 
-現在のセッション完了画面（`/learn/[sessionId]/complete`）は「セッション完了」という見出しと続行ボタンのみを表示している。  
+現在のセッション完了画面（`/learn/[sessionId]/complete`）は「セッション完了」という見出しと `/learn` への導線のみを表示している。  
 セッション中に何問正解できたか・どの問題を間違えたかをユーザーが確認できず、学習成果を振り返る手段がない。
 
 ---
@@ -42,7 +42,7 @@
 │    正解: A. 仮想 DOM の差分検出プロセス  │
 │ ...                                      │
 │                                          │
-│ [同じトピックで続ける]  [別のトピックへ] │
+│ [ /learn に戻る ]                       │
 └──────────────────────────────────────────┘
 ```
 
@@ -99,13 +99,13 @@ export type SessionResult = {
 
 ### `SessionCompletePage` の変更
 
-**変更前**: `topic`・`mode` のみを受け取り「セッション完了」文言と続行ボタンを表示  
-**変更後**: `SessionResult` 型を受け取り、スコアサマリと問題ごとの結果を表示
+**変更前**: `topic`・`mode` のみを受け取り「セッション完了」文言とアクションを表示  
+**変更後**: `SessionResult` 型を受け取り、スコアサマリと問題ごとの結果を表示する
 
 ```typescript
 // src/app/(features)/learn/_components/SessionCompletePage.tsx
-export default function SessionCompletePage(props: { result: SessionResult; sessionId: string }) {
-  const { result, sessionId } = props;
+export default function SessionCompletePage(props: { result: SessionResult }) {
+  const { result } = props;
   const percentage = Math.round((result.correctCount / result.totalCount) * 100);
 
   return (
@@ -156,17 +156,12 @@ export default function SessionCompletePage(props: { result: SessionResult; sess
         ))}
       </section>
 
-      {/* アクション */}
-      <section className="mt-6 card reveal" style={{ animationDelay: "240ms" }}>
-        <form action={continueSessionFormAction} className="space-y-4">
-          <input type="hidden" name="topic" value={result.topic} />
-          <input type="hidden" name="mode" value={result.mode} />
-          <div className="flex flex-wrap items-center gap-3">
-            <ContinueButton />
-            <Link href="/learn" className="btn btn-ghost">別のトピックへ</Link>
-          </div>
-        </form>
-      </section>
+       {/* アクション */}
+       <section className="mt-6 card reveal" style={{ animationDelay: "240ms" }}>
+         <Link href="/learn" className="btn btn-primary">
+           /learn に戻る
+         </Link>
+       </section>
     </main>
   );
 }
@@ -180,7 +175,7 @@ export default async function LearnSessionComplete({ params }: PageProps) {
   const { sessionId } = await params;
   const result = await getSessionResult(sessionId); // 新規クエリ関数
 
-  return <SessionCompletePage result={result} sessionId={sessionId} />;
+  return <SessionCompletePage result={result} />;
 }
 ```
 
@@ -191,7 +186,7 @@ export default async function LearnSessionComplete({ params }: PageProps) {
 | ファイル | 変更種別 | 内容 |
 |----------|----------|------|
 | `src/server/quiz/query.ts` | 変更 | `getSessionResult` 関数を追加 |
-| `src/app/(features)/learn/_components/SessionCompletePage.tsx` | 変更 | `SessionResult` 型を受け取りスコア・結果一覧を表示するよう変更 |
+| `src/app/(features)/learn/_components/SessionCompletePage.tsx` | 変更 | `SessionResult` 型を受け取りスコア・結果一覧と `/learn` への導線を表示するよう変更 |
 | `src/app/(features)/learn/[sessionId]/complete/page.tsx` | 変更 | `getSessionSnapshot` → `getSessionResult` に変更 |
 | `tests/` | 追加 | `getSessionResult` のユニットテストを追加 |
 

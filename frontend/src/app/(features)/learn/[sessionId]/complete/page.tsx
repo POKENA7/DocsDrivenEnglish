@@ -14,5 +14,5 @@ export default async function LearnSessionComplete({ params }: PageProps) {
   const { sessionId } = await params;
   const result = await getSessionResult(sessionId);
 
-  return <SessionCompletePage result={result} sessionId={sessionId} />;
+  return <SessionCompletePage result={result} />;
 }
