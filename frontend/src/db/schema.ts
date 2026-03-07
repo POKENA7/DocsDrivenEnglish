@@ -40,6 +40,7 @@ export const reviewQueue = sqliteTable(
     questionId: text("question_id").notNull(),
     nextReviewAt: integer("next_review_at").notNull(), // Unix timestamp ms
     wrongCount: integer("wrong_count").notNull().default(1),
+    intervalDays: integer("interval_days").notNull().default(1), // スペースド・リペティション用インターバル（日数）
   },
   (table) => [unique().on(table.userId, table.questionId)],
 );

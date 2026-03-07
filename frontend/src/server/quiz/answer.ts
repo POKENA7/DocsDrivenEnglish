@@ -50,10 +50,11 @@ export async function submitQuizAnswer(
   // ログイン済みの場合のみ review_queue を更新
   if (input.userId) {
     const nowMs = Date.now();
+    const dayMs = 24 * 60 * 60 * 1000;
 
     if (!isCorrect) {
-      // 不正解: UPSERT（翌日に nextReviewAt をセット、wrongCount をインクリメント）
-      const nextReviewAt = nowMs + 24 * 60 * 60 * 1000;
+      // 不正解: UPSERT（翌日に nextReviewAt をセット、intervalDays をリセット、wrongCount をインクリメント）
+      const nextReviewAt = nowMs + dayMs;
       await db
         .insert(reviewQueue)
         .values({
@@ -62,27 +63,31 @@ export async function submitQuizAnswer(
           questionId: input.questionId,
           nextReviewAt,
           wrongCount: 1,
+          intervalDays: 1,
         })
         .onConflictDoUpdate({
           target: [reviewQueue.userId, reviewQueue.questionId],
           set: {
             nextReviewAt,
+            intervalDays: 1,
             wrongCount: sql`${reviewQueue.wrongCount} + 1`,
           },
         });
       out.isReviewRegistered = true;
     } else {
-      // 正解: review_queue にエントリがある場合のみ nextReviewAt を 30 日後に更新
-      const nextReviewAt = nowMs + 30 * 24 * 60 * 60 * 1000;
+      // 正解: review_queue にエントリがある場合のみ intervalDays を 2 倍（上限 30 日）にして nextReviewAt を更新
       const updated = await db
         .update(reviewQueue)
-        .set({ nextReviewAt })
+        .set({
+          intervalDays: sql`MIN(${reviewQueue.intervalDays} * 2, 30)`,
+          nextReviewAt: sql`${nowMs} + MIN(${reviewQueue.intervalDays} * 2, 30) * ${dayMs}`,
+        })
         .where(
           and(eq(reviewQueue.userId, input.userId), eq(reviewQueue.questionId, input.questionId)),
         )
-        .returning({ id: reviewQueue.id });
-      if (updated.length > 0) {
-        out.reviewNextAt = nextReviewAt;
+        .returning({ id: reviewQueue.id, nextReviewAt: reviewQueue.nextReviewAt });
+      if (updated.length > 0 && updated[0]) {
+        out.reviewNextAt = updated[0].nextReviewAt;
       }
     }
   }

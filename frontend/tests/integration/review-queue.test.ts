@@ -127,7 +127,8 @@ describe("review queue", () => {
       const first = session.questions[0]!;
 
       // update().returning() が review_queue エントリを返すよう設定
-      reviewQueueReturnRows = [{ id: "review-id" }];
+      const expectedNextAt = Date.now() + 2 * 24 * 60 * 60 * 1000; // intervalDays=1 → 2倍 → 2日後（モックは直接返す）
+      reviewQueueReturnRows = [{ id: "review-id", nextReviewAt: expectedNextAt }];
 
       // correctIndex = 0 なので selectedIndex = 0 は正解
       const result = await submitQuizAnswer({
@@ -139,10 +140,7 @@ describe("review queue", () => {
 
       expect(result.isCorrect).toBe(true);
       expect(result.isReviewRegistered).toBeUndefined();
-      expect(typeof result.reviewNextAt).toBe("number");
-      // 30日後付近であることを確認（前後1分の余裕）
-      const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000;
-      expect(result.reviewNextAt).toBeGreaterThan(Date.now() + thirtyDaysMs - 60_000);
+      expect(result.reviewNextAt).toBe(expectedNextAt);
     });
 
     it("正解時かつ review_queue エントリがない場合 reviewNextAt は undefined", async () => {

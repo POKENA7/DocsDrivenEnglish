@@ -170,7 +170,9 @@ export default function SessionPage({ session }: { session: SessionSnapshot }) {
             style={{ animationDelay: "200ms" }}
             role="status"
           >
-            🎉 復習クリア！次回は 30 日後に出題します
+            🎉 復習クリア！次回は{" "}
+            {Math.round((result.reviewNextAt - Date.now()) / (1000 * 60 * 60 * 24))}{" "}
+            日後に出題します
           </p>
         ) : null}
       </section>
