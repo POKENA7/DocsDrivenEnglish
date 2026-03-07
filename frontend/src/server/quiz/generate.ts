@@ -4,7 +4,9 @@ import { z } from "zod";
 
 import { createOpenAIParsedText } from "@/lib/openaiClient";
 
-import type { Mode } from "./types";
+import { fetchHnTrendArticleContent } from "@/server/suggestions/hn-trends";
+
+import type { Mode, SourceType } from "./types";
 
 const STRUCTURED_OUTPUTS_MODEL = "gpt-5-mini";
 
@@ -19,7 +21,7 @@ const quizItemSchema = z.object({
 
 type GeneratedQuizItem = z.infer<typeof quizItemSchema>;
 
-export async function generateQuizItemsFromTopic(
+async function generateQuizItemsFromTopic(
   topic: string,
   mode: Mode,
   questionCount: number,
@@ -27,7 +29,7 @@ export async function generateQuizItemsFromTopic(
   const trimmedTopic = topic.trim();
   if (!trimmedTopic) return [];
 
-  console.log("[quiz] generating quiz items, topic = ", { topic: trimmedTopic, questionCount });
+  console.log("[quiz] generating quiz items from topic", { topic: trimmedTopic, questionCount });
 
   const QuizItemsSchema = z.object({
     items: z.array(quizItemSchema).min(1).max(questionCount),
@@ -72,13 +74,93 @@ export async function generateQuizItemsFromTopic(
     STRUCTURED_OUTPUTS_MODEL,
     QuizItemsSchema,
     "quiz_items_ja",
-    { maxOutputTokens: 8000 },
+    {
+      maxOutputTokens: 8000,
+    },
   );
 
-  return parsed.items.map((item) => ({
+  return normalizeGeneratedItems(parsed.items);
+}
+
+function normalizeGeneratedItems(items: GeneratedQuizItem[]): GeneratedQuizItem[] {
+  return items.map((item) => ({
     ...item,
     prompt: item.prompt.trim(),
     explanation: item.explanation.trim(),
-    choices: item.choices.map((c) => c.trim()),
+    choices: item.choices.map((choice) => choice.trim()),
   }));
+}
+
+async function generateQuizItemsFromArticleContent(input: {
+  topic: string;
+  articleContent: string;
+  mode: Mode;
+  questionCount: number;
+}): Promise<GeneratedQuizItem[]> {
+  console.log("[quiz] generating quiz items from article", {
+    topic: input.topic,
+    questionCount: input.questionCount,
+  });
+
+  const QuizItemsSchema = z.object({
+    items: z.array(quizItemSchema).min(1).max(input.questionCount),
+  });
+
+  const base =
+    "あなたは『英語と技術の両方を学べるプログラマー向け英語学習サイト』のクイズ作成者です。\n" +
+    "以下のトレンド記事本文を教材として、記事内容に基づく英語クイズを作成してください。\n" +
+    `記事タイトル: ${input.topic}\n` +
+    `教材本文:\n${input.articleContent}\n` +
+    "共通要件（厳守）:\n" +
+    `- 必ず${input.questionCount}問作ること。\n` +
+    "- prompt(問題文), choices(選択肢), explanation(解説)はすべて日本語。\n" +
+    "- promptは以下のセクションとし、セクション間は改行すること。\n" +
+    "  1) 問題文（日本語）\n" +
+    "  2) 『原文:』で始まるセクションに、教材本文から根拠となる英文を引用または要約して載せる。\n" +
+    "- choices は必ず4つ。正解は correctIndex(0-3) で示す。\n" +
+    "- 記事本文に書かれていない内容を正解にしないこと。\n" +
+    "- 解説は記事本文のどの情報が根拠か分かるように1文で簡潔に書くこと。\n" +
+    "- 同一セッション内で同じ話題を重複して出題しないこと。\n";
+
+  const modeSpecific =
+    input.mode === "word"
+      ? "word モード要件（厳守）:\n" +
+        "- 記事本文の中で重要な英単語・英語フレーズを題材にし、日本語の意味や文脈上のニュアンスを問う。\n"
+      : "reading モード要件（厳守）:\n" +
+        "- 記事本文の因果関係・比較・主張・条件を読まないと解けない読解問題にする。\n" +
+        "- choices はすべて同程度の長さと具体性にそろえる。\n";
+
+  const parsed = await createOpenAIParsedText(
+    base + modeSpecific,
+    STRUCTURED_OUTPUTS_MODEL,
+    QuizItemsSchema,
+    "quiz_items_ja",
+    { maxOutputTokens: 8000 },
+  );
+
+  return normalizeGeneratedItems(parsed.items);
+}
+
+export async function generateQuizItemsFromSource(input: {
+  topic: string;
+  sourceType: SourceType;
+  articleKey: string | null;
+  mode: Mode;
+  questionCount: number;
+}): Promise<GeneratedQuizItem[]> {
+  if (input.sourceType === "hn_trend") {
+    if (!input.articleKey) {
+      throw new Error("articleKey is required for hn_trend");
+    }
+
+    const article = await fetchHnTrendArticleContent(input.articleKey);
+    return generateQuizItemsFromArticleContent({
+      topic: article.title,
+      articleContent: article.content,
+      mode: input.mode,
+      questionCount: input.questionCount,
+    });
+  }
+
+  return generateQuizItemsFromTopic(input.topic, input.mode, input.questionCount);
 }

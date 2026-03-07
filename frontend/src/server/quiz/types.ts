@@ -5,6 +5,9 @@ import { z } from "zod";
 export const modeSchema = z.enum(["word", "reading"]);
 export type Mode = z.infer<typeof modeSchema>;
 
+export const sourceTypeSchema = z.enum(["manual", "hn_trend", "shared"]);
+export type SourceType = z.infer<typeof sourceTypeSchema>;
+
 export type ReviewQuestionRow = {
   questionId: string;
   prompt: string;
@@ -31,6 +34,7 @@ export type SessionRecord = {
 export type StartSessionResponse = {
   sessionId: string;
   topic: string;
+  sourceType: SourceType;
   questions: Array<{
     questionId: string;
     prompt: string;
@@ -47,7 +51,6 @@ export type SubmitAnswerInput = {
 export type SubmitAnswerResponse = {
   isCorrect: boolean;
   explanation: string;
-  // 不正解時: 復習キューへの自動登録を通知 / 正解時(復習問題): 次回出題日時(ms)
   isReviewRegistered?: boolean;
   reviewNextAt?: number;
 };
