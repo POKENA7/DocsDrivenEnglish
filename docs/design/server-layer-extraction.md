@@ -43,7 +43,6 @@ src/
 │       │   │   ├── SessionCompletePage.tsx
 │       │   │   ├── SessionProgress.tsx
 │       │   │   ├── SubmitButton.tsx
-│       │   │   └── ContinueButton.tsx
 │       │   ├── _hooks/
 │       │   │   ├── useQuizSession.ts
 │       │   │   └── useQuizAnswer.ts

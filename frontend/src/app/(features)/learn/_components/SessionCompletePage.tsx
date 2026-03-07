@@ -1,7 +1,7 @@
 import type { SessionResult } from "@/server/quiz/query";
-import ContinueForm from "./ContinueForm";
+import Link from "next/link";
 
-export default function SessionCompletePage(props: { result: SessionResult; sessionId: string }) {
+export default function SessionCompletePage(props: { result: SessionResult }) {
   const { result } = props;
   const percentage = Math.round((result.correctCount / result.totalCount) * 100);
 
@@ -51,7 +51,9 @@ export default function SessionCompletePage(props: { result: SessionResult; sess
       </section>
 
       <section className="mt-6 card reveal" style={{ animationDelay: "240ms" }}>
-        <ContinueForm topic={result.topic} mode={result.mode} />
+        <Link href="/learn" className="btn btn-primary">
+          トップ に戻る
+        </Link>
       </section>
     </main>
   );

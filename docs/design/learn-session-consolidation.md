@@ -41,7 +41,7 @@
       complete/
         page.tsx                    ← session/[sessionId]/complete/page.tsx から移動
     _api/
-      actions.ts                    ← startSessionFormAction + continueSessionFormAction を統合
+      actions.ts                    ← startSessionFormAction などの Server Action を配置
       mutations.ts                  ← session/_api/mutations.ts から移動
     _components/
       LearnPage.tsx                 ← 変更なし
@@ -49,7 +49,6 @@
       SessionPage.tsx               ← session/_components/ から移動
       SessionProgress.tsx           ← session/_components/ から移動
       SessionCompletePage.tsx       ← session/_components/ から移動
-      ContinueButton.tsx            ← session/_components/ から移動
     _hooks/
       useQuizSession.ts             ← session/_hooks/ から移動（redirect 先 URL を変更）
       useQuizAnswer.ts              ← session/_hooks/ から移動
@@ -70,7 +69,6 @@
 | 移動 | `session/_components/SessionPage.tsx` | `learn/_components/SessionPage.tsx` |
 | 移動 | `session/_components/SessionProgress.tsx` | `learn/_components/SessionProgress.tsx` |
 | 移動 | `session/_components/SessionCompletePage.tsx` | `learn/_components/SessionCompletePage.tsx` |
-| 移動 | `session/_components/ContinueButton.tsx` | `learn/_components/ContinueButton.tsx` |
 | 移動 | `session/_hooks/useQuizSession.ts` | `learn/_hooks/useQuizSession.ts` |
 | 移動 | `session/_hooks/useQuizAnswer.ts` | `learn/_hooks/useQuizAnswer.ts` |
 | 移動 | `session/_utils/stripUrlsFromText.ts` | `learn/_utils/stripUrlsFromText.ts` |
@@ -81,11 +79,11 @@
 
 | ファイル | 変更内容 |
 |---|---|
-| `learn/_api/actions.ts` | `continueSessionFormAction` を `session/_api/actions.ts` から吸収統合。redirect 先を `/learn/[id]` に変更 |
+| `learn/_api/actions.ts` | 学習開始・回答送信などの Server Action を配置 |
 | `learn/_hooks/useQuizSession.ts` | `router.push` の redirect 先を `/session/[id]/complete` → `/learn/[id]/complete` に変更 |
 | `learn/[sessionId]/page.tsx` | import パスを `session/_api/mutations` → `learn/_api/mutations` に変更 |
 | `learn/[sessionId]/complete/page.tsx` | import パスを `session/_api/mutations` → `learn/_api/mutations` に変更 |
-| `learn/_components/SessionCompletePage.tsx` | `continueSessionFormAction` の import 元を `learn/_api/actions` に変更 |
+| `learn/_components/SessionCompletePage.tsx` | セッション結果表示と `/learn` への導線を担当 |
 | `history/_api/mutations.ts` | `session/_api/mutations` への import がある場合は修正（現状は直接 DB 操作のため不要な可能性大） |
 
 ### 削除
@@ -131,7 +129,7 @@ feature 間の import はゼロになる。
 
 1. `feature/learn-session-consolidation` ブランチを切る
 2. `session/_api/mutations.ts` を `learn/_api/mutations.ts` へ移動・import パス修正
-3. `learn/_api/actions.ts` に `continueSessionFormAction` を統合・redirect 先 URL 変更
+3. `learn/_api/actions.ts` に学習開始・回答送信の Server Action を集約
 4. `learn/_hooks/`, `_utils/`, `_components/` へ残ファイルを移動・import パス修正
 5. `learn/[sessionId]/` と `learn/[sessionId]/complete/` を作成（page.tsx 移動）
 6. `session/` を削除
