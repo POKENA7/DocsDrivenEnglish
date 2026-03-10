@@ -87,4 +87,28 @@ describe("related-topics", () => {
     );
     expect(onConflictDoUpdate).toHaveBeenCalledTimes(1);
   });
+
+  it("壊れた topics cache を読んだ場合は INTERNAL を投げる", async () => {
+    const { getDb } = await import("@/db/client");
+
+    vi.mocked(getDb).mockReturnValue({
+      select: () =>
+        createSelectBuilder([
+          {
+            userId: "user-1",
+            topics: "[1,2,3]",
+            cachedAt: Date.now(),
+          },
+        ]),
+    } as never);
+
+    const { getRelatedTopicSuggestions } = await import("@/server/suggestions/related-topics");
+
+    try {
+      await getRelatedTopicSuggestions("user-1");
+      throw new Error("expected getRelatedTopicSuggestions to throw");
+    } catch (error) {
+      expect(error).toMatchObject({ code: "INTERNAL" });
+    }
+  });
 });

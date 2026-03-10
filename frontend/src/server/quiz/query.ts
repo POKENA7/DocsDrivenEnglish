@@ -10,6 +10,7 @@ import {
   sessions as sessionsTable,
 } from "@/db/schema";
 import { and, eq, inArray, lte } from "drizzle-orm";
+import { parseStringArrayColumn } from "@/server/json";
 
 import { ApiError } from "./errors";
 import type {
@@ -54,7 +55,10 @@ export function parseReviewQuestionRows(rows: ReviewQuestionRow[]): QuestionReco
   return rows.map((r) => ({
     questionId: r.questionId,
     prompt: r.prompt,
-    choices: JSON.parse(r.choicesJson) as string[],
+    choices: parseStringArrayColumn({
+      columnName: "choices_json",
+      raw: r.choicesJson,
+    }),
     correctIndex: r.correctIndex,
     explanation: r.explanation,
   }));
@@ -88,7 +92,10 @@ export async function getQuestion(questionId: string): Promise<QuestionRecord> {
   return {
     questionId: row.questionId,
     prompt: row.prompt,
-    choices: JSON.parse(row.choicesJson) as string[],
+    choices: parseStringArrayColumn({
+      columnName: "choices_json",
+      raw: row.choicesJson,
+    }),
     correctIndex: row.correctIndex,
     explanation: row.explanation,
   };
@@ -105,7 +112,10 @@ export async function getSessionSnapshot(sessionId: string): Promise<SessionReco
 
   if (!session) notFound();
 
-  const questionIds = JSON.parse(session.questionIdsJson) as string[];
+  const questionIds = parseStringArrayColumn({
+    columnName: "question_ids_json",
+    raw: session.questionIdsJson,
+  });
 
   const questionRows = await db
     .select()
@@ -120,7 +130,10 @@ export async function getSessionSnapshot(sessionId: string): Promise<SessionReco
     .map((q) => ({
       questionId: q.questionId,
       prompt: q.prompt,
-      choices: JSON.parse(q.choicesJson) as string[],
+      choices: parseStringArrayColumn({
+        columnName: "choices_json",
+        raw: q.choicesJson,
+      }),
       correctIndex: q.correctIndex,
       explanation: q.explanation,
     }));
@@ -158,7 +171,10 @@ export async function getSessionResult(sessionId: string): Promise<SessionResult
 
   if (!session) notFound();
 
-  const questionIds = JSON.parse(session.questionIdsJson) as string[];
+  const questionIds = parseStringArrayColumn({
+    columnName: "question_ids_json",
+    raw: session.questionIdsJson,
+  });
 
   const [questionRows, attemptRows] = await Promise.all([
     db.select().from(questionsTable).where(inArray(questionsTable.questionId, questionIds)),
@@ -177,7 +193,10 @@ export async function getSessionResult(sessionId: string): Promise<SessionResult
         questionId: q.questionId,
         prompt: q.prompt,
         correctIndex: q.correctIndex,
-        choices: JSON.parse(q.choicesJson) as string[],
+        choices: parseStringArrayColumn({
+          columnName: "choices_json",
+          raw: q.choicesJson,
+        }),
         isCorrect: attempt?.isCorrect ?? false,
       };
     })

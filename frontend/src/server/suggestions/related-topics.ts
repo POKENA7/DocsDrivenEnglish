@@ -6,6 +6,7 @@ import { z } from "zod";
 import { getDb } from "@/db/client";
 import { sessions, topicSuggestionsCache } from "@/db/schema";
 import { createOpenAIParsedText } from "@/lib/openaiClient";
+import { parseStringArrayColumn } from "@/server/json";
 
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 const SHARED_TOPIC = "他のユーザーが作成したクイズ";
@@ -30,7 +31,12 @@ async function readTopicSuggestionCache(userId: string): Promise<string[] | null
   if (!row) return null;
   if (Date.now() - row.cachedAt >= CACHE_TTL_MS) return null;
 
-  return normalizeTopics(JSON.parse(row.topics) as string[]);
+  return normalizeTopics(
+    parseStringArrayColumn({
+      columnName: "topics",
+      raw: row.topics,
+    }),
+  );
 }
 
 async function fetchRecentManualTopics(userId: string): Promise<string[]> {
