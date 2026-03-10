@@ -76,7 +76,6 @@ export async function getRelatedTopicSuggestions(userId: string): Promise<string
     RELATED_TOPICS_MODEL,
     relatedTopicsSchema,
     "related_topics_ja",
-    { maxOutputTokens: 300 },
   );
 
   const topics = normalizeTopics(parsed.topics);
