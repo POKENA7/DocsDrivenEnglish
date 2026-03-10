@@ -11,6 +11,32 @@ const OPENAI_MAX_OUTPUT_TOKENS = 2_048;
 
 let cachedClient: OpenAI | null = null;
 
+function isIncompleteResponse(response: {
+  status?: string | null;
+  incomplete_details: unknown | null;
+}): boolean {
+  return response.status === "incomplete" || response.incomplete_details !== null;
+}
+
+function parseFallbackOutputText(input: {
+  rawText: string;
+  schemaName: string;
+  model: string;
+  responseId: string;
+}): unknown {
+  try {
+    return JSON.parse(input.rawText) as unknown;
+  } catch (error) {
+    console.log("[openai] responses.parse fallback JSON.parse failed", {
+      schemaName: input.schemaName,
+      model: input.model,
+      responseId: input.responseId,
+      rawTextHead: input.rawText.slice(0, 400),
+    });
+    throw error;
+  }
+}
+
 function getOpenAIClient(): OpenAI {
   if (cachedClient) return cachedClient;
 
@@ -54,26 +80,22 @@ export async function createOpenAIParsedText<TSchema extends z.ZodTypeAny>(
 
     console.log("[openai] response = ", response);
 
-    const outputParsed = response.output_parsed;
-    if (outputParsed !== null) {
+    if (response.output_parsed !== null) {
       console.log("[openai] responses.parse success", {
         schemaName,
         model: response.model,
         responseId: response.id,
       });
-      return outputParsed;
+      return response.output_parsed;
     }
 
-    const status = (response as unknown as { status?: string }).status;
-    const incompleteDetails = (response as unknown as { incomplete_details?: unknown })
-      .incomplete_details;
-    if (status === "incomplete" || incompleteDetails) {
+    if (isIncompleteResponse(response)) {
       console.log("[openai] responses.parse incomplete", {
         schemaName,
         model: response.model,
         responseId: response.id,
-        status,
-        incompleteDetails,
+        status: response.status,
+        incompleteDetails: response.incomplete_details,
         maxOutputTokens,
       });
 
@@ -87,19 +109,13 @@ export async function createOpenAIParsedText<TSchema extends z.ZodTypeAny>(
       throw new Error("OpenAI response.output_text is empty (output_parsed is null)");
     }
 
-    let json: unknown;
-    try {
-      json = JSON.parse(rawText) as unknown;
-    } catch (e) {
-      console.log("[openai] responses.parse fallback JSON.parse failed", {
-        schemaName,
-        model: response.model,
-        responseId: response.id,
-        rawTextHead: rawText.slice(0, 400),
-      });
-      throw e;
-    }
-    const parsedByZod = schema.parse(json) as z.infer<TSchema>;
+    const json = parseFallbackOutputText({
+      rawText,
+      schemaName,
+      model: response.model,
+      responseId: response.id,
+    });
+    const parsedByZod = schema.parse(json);
 
     console.log("[openai] responses.parse success (fallback)", {
       schemaName,
