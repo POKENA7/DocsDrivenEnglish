@@ -5,8 +5,8 @@ import { questions as questionsTable, sessions as sessionsTable } from "@/db/sch
 import { and, eq, ne, sql } from "drizzle-orm";
 
 import { ApiError } from "./errors";
-import { fetchDueReviewQuestions } from "./query";
-import type { Mode, StartSessionResponse } from "./types";
+import { fetchDueReviewQuestions, parseReviewQuestionRows, toSessionQuestions } from "./query";
+import type { Mode, ReviewQuestionRow, StartSessionResponse } from "./types";
 
 const SHARED_TOPIC = "他のユーザーが作成したクイズ";
 
@@ -37,13 +37,7 @@ export async function startSharedQuizSession(input: {
   // 他ユーザーの問題を取得する件数 = questionCount - 復習問題数
   const sharedCount = input.questionCount - reviewQuestionIds.length;
 
-  let sharedQuestionRows: Array<{
-    questionId: string;
-    prompt: string;
-    choicesJson: string;
-    correctIndex: number;
-    explanation: string;
-  }> = [];
+  let sharedQuestionRows: ReviewQuestionRow[] = [];
 
   if (sharedCount > 0) {
     sharedQuestionRows = await db
@@ -79,27 +73,13 @@ export async function startSharedQuizSession(input: {
   });
 
   // レスポンス組み立て（復習問題 + 他ユーザー問題の順）
-  const allQuestions = [
-    ...reviewQuestionRows.map((r) => ({
-      questionId: r.questionId,
-      prompt: r.prompt,
-      choices: JSON.parse(r.choicesJson) as string[],
-    })),
-    ...sharedQuestionRows.map((r) => ({
-      questionId: r.questionId,
-      prompt: r.prompt,
-      choices: JSON.parse(r.choicesJson) as string[],
-    })),
-  ];
-
   return {
     sessionId,
     topic: SHARED_TOPIC,
     sourceType: "shared",
-    questions: allQuestions.map((q) => ({
-      questionId: q.questionId,
-      prompt: q.prompt,
-      choices: q.choices.map((text, index) => ({ index, text })),
-    })),
+    questions: toSessionQuestions([
+      ...parseReviewQuestionRows(reviewQuestionRows),
+      ...parseReviewQuestionRows(sharedQuestionRows),
+    ]),
   };
 }

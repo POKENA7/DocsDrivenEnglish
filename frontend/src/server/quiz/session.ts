@@ -6,7 +6,7 @@ import { eq } from "drizzle-orm";
 
 import { generateQuizItemsFromSource } from "./generate";
 import { ApiError } from "./errors";
-import { fetchDueReviewQuestions } from "./query";
+import { fetchDueReviewQuestions, parseReviewQuestionRows, toSessionQuestions } from "./query";
 import type { Mode, SourceType, StartSessionResponse } from "./types";
 
 export async function startQuizSession(input: {
@@ -89,26 +89,13 @@ export async function startQuizSession(input: {
     );
   }
 
-  const allQuestions = [
-    ...reviewQuestionRows.map((r) => ({
-      questionId: r.questionId,
-      prompt: r.prompt,
-      choices: JSON.parse(r.choicesJson) as string[],
-      correctIndex: r.correctIndex,
-      explanation: r.explanation,
-    })),
-    ...newQuestions,
-  ];
+  const allQuestions = [...parseReviewQuestionRows(reviewQuestionRows), ...newQuestions];
 
   return {
     sessionId,
     topic,
     sourceType: input.sourceType,
-    questions: allQuestions.map((q) => ({
-      questionId: q.questionId,
-      prompt: q.prompt,
-      choices: q.choices.map((text, index) => ({ index, text })),
-    })),
+    questions: toSessionQuestions(allQuestions),
   };
 }
 

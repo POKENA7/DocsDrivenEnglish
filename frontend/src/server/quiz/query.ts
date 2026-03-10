@@ -12,7 +12,12 @@ import {
 import { and, eq, inArray, lte } from "drizzle-orm";
 
 import { ApiError } from "./errors";
-import type { QuestionRecord, ReviewQuestionRow, SessionRecord } from "./types";
+import type {
+  QuestionRecord,
+  ReviewQuestionRow,
+  SessionRecord,
+  StartSessionResponse,
+} from "./types";
 
 /**
  * 期限切れの復習問題を reviewQueue から取得する共通ヘルパー。
@@ -39,6 +44,34 @@ export async function fetchDueReviewQuestions(
     .innerJoin(questionsTable, eq(reviewQueue.questionId, questionsTable.questionId))
     .where(and(eq(reviewQueue.userId, userId), lte(reviewQueue.nextReviewAt, now)))
     .limit(limit);
+}
+
+/**
+ * ReviewQuestionRow[] の choicesJson をパースして QuestionRecord[] に変換する。
+ * session.ts / shared-session.ts の両方から利用される。
+ */
+export function parseReviewQuestionRows(rows: ReviewQuestionRow[]): QuestionRecord[] {
+  return rows.map((r) => ({
+    questionId: r.questionId,
+    prompt: r.prompt,
+    choices: JSON.parse(r.choicesJson) as string[],
+    correctIndex: r.correctIndex,
+    explanation: r.explanation,
+  }));
+}
+
+/**
+ * 問題リストをセッション開始レスポンス用の questions 形式に変換する。
+ * session.ts / shared-session.ts の両方から利用される。
+ */
+export function toSessionQuestions(
+  questions: Array<{ questionId: string; prompt: string; choices: string[] }>,
+): StartSessionResponse["questions"] {
+  return questions.map((q) => ({
+    questionId: q.questionId,
+    prompt: q.prompt,
+    choices: q.choices.map((text, index) => ({ index, text })),
+  }));
 }
 
 export async function getQuestion(questionId: string): Promise<QuestionRecord> {
