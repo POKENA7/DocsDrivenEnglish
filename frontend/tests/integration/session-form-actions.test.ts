@@ -2,13 +2,16 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { startSessionFormAction } from "@/app/(features)/learn/_api/actions";
 
-const { redirectMock, requireUserIdMock, startQuizSessionMock } = vi.hoisted(() => ({
-  redirectMock: vi.fn((path: string) => {
-    throw new Error(`REDIRECT:${path}`);
+const { redirectMock, requireUserIdMock, startQuizSessionMock, getUserSettingsMock } = vi.hoisted(
+  () => ({
+    redirectMock: vi.fn((path: string) => {
+      throw new Error(`REDIRECT:${path}`);
+    }),
+    requireUserIdMock: vi.fn(async () => "user_123"),
+    startQuizSessionMock: vi.fn(async () => ({ sessionId: "session-123" })),
+    getUserSettingsMock: vi.fn(async () => ({ dailyGoalCount: 5, dailyReviewCount: 2 })),
   }),
-  requireUserIdMock: vi.fn(async () => "user_123"),
-  startQuizSessionMock: vi.fn(async () => ({ sessionId: "session-123" })),
-}));
+);
 
 vi.mock("next/navigation", () => ({
   redirect: redirectMock,
@@ -38,18 +41,21 @@ vi.mock("@clerk/nextjs/server", () => ({
   auth: vi.fn(),
 }));
 
+vi.mock("@/server/user-settings/query", () => ({
+  getUserSettings: getUserSettingsMock,
+}));
+
 describe("startSessionFormAction", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    getUserSettingsMock.mockResolvedValue({ dailyGoalCount: 5, dailyReviewCount: 2 });
   });
 
-  it("articleKey がある場合は hn_trend として開始する", async () => {
+  it("articleKey がある場合は hn_trend として開始し、ユーザー設定の問題数を使う", async () => {
     const formData = new FormData();
     formData.set("topic", "Latest React Compiler");
     formData.set("articleKey", "hn-1234567890000-1");
     formData.set("mode", "reading");
-    formData.set("questionCount", "5");
-    formData.set("reviewQuestionCount", "2");
 
     await expect(startSessionFormAction({ error: null }, formData)).rejects.toThrow(
       "REDIRECT:/learn/session-123",
@@ -71,8 +77,6 @@ describe("startSessionFormAction", () => {
     formData.set("topic", "React Hooks");
     formData.set("articleKey", "");
     formData.set("mode", "word");
-    formData.set("questionCount", "4");
-    formData.set("reviewQuestionCount", "9");
 
     await expect(startSessionFormAction({ error: null }, formData)).rejects.toThrow(
       "REDIRECT:/learn/session-123",
@@ -83,8 +87,8 @@ describe("startSessionFormAction", () => {
       sourceType: "manual",
       articleKey: null,
       mode: "word",
-      questionCount: 4,
-      reviewQuestionCount: 3,
+      questionCount: 5,
+      reviewQuestionCount: 2,
       userId: "user_123",
     });
   });

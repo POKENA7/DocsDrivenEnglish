@@ -1,8 +1,11 @@
 import type { SessionResult } from "@/server/quiz/query";
 import Link from "next/link";
 
-export default function SessionCompletePage(props: { result: SessionResult }) {
-  const { result } = props;
+export default function SessionCompletePage(props: {
+  result: SessionResult;
+  isGoalAchieved: boolean;
+}) {
+  const { result, isGoalAchieved } = props;
   const percentage = Math.round((result.correctCount / result.totalCount) * 100);
 
   return (
@@ -13,6 +16,16 @@ export default function SessionCompletePage(props: { result: SessionResult }) {
           {result.topic} — {result.mode} モード
         </p>
       </div>
+
+      {isGoalAchieved && (
+        <div
+          className="reveal mt-4 rounded-lg border border-primary/30 bg-primary/5 px-4 py-3 text-sm"
+          role="status"
+          style={{ animationDelay: "40ms" }}
+        >
+          🎯 本日の学習目標を達成しました！
+        </div>
+      )}
 
       <section className="mt-6 card reveal" style={{ animationDelay: "80ms" }}>
         <dl className="grid grid-cols-2 gap-4">

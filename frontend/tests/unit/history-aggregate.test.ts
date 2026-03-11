@@ -1,6 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { getDailyAttemptCountsQuery, getHistorySummaryQuery } from "@/server/history/query";
+import {
+  getDailyAttemptCountsQuery,
+  getHistorySummaryQuery,
+  getTodayAttemptCount,
+} from "@/server/history/query";
 
 vi.mock("@opennextjs/cloudflare", () => ({
   getCloudflareContext: () => ({ env: { DB: {} } }),
@@ -115,5 +119,35 @@ describe("getDailyAttemptCountsQuery", () => {
     expect(result[0]).toMatchObject({ year: 2026, month: 1, day: 10 });
     expect(result[1]).toMatchObject({ year: 2026, month: 2, day: 20 });
     expect(result[2]).toMatchObject({ year: 2026, month: 3, day: 3 });
+  });
+});
+
+describe("getTodayAttemptCount", () => {
+  function makeTodayDb(countValue: number) {
+    return {
+      select: () => ({
+        from: () => ({
+          where: () => Promise.resolve([{ count: countValue }]),
+        }),
+      }),
+    };
+  }
+
+  it("今日の回答数を返す", async () => {
+    const { getDb } = await import("@/db/client");
+    vi.mocked(getDb).mockReturnValue(makeTodayDb(7) as ReturnType<typeof getDb>);
+
+    const result = await getTodayAttemptCount("user-1");
+
+    expect(result).toBe(7);
+  });
+
+  it("回答がない場合は 0 を返す", async () => {
+    const { getDb } = await import("@/db/client");
+    vi.mocked(getDb).mockReturnValue(makeTodayDb(0) as ReturnType<typeof getDb>);
+
+    const result = await getTodayAttemptCount("user-1");
+
+    expect(result).toBe(0);
   });
 });

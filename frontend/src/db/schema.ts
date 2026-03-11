@@ -58,3 +58,9 @@ export const hnTrendCache = sqliteTable("hn_trend_cache", {
   articles: text("articles").notNull(),
   cachedAt: integer("cached_at").notNull(),
 });
+
+export const userSettings = sqliteTable("user_settings", {
+  userId: text("user_id").primaryKey(),
+  dailyGoalCount: integer("daily_goal_count").notNull().default(10),
+  dailyReviewCount: integer("daily_review_count").notNull().default(2),
+});
