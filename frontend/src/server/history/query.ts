@@ -2,7 +2,7 @@ import "server-only";
 
 import { getDb } from "@/db/client";
 import { attempts as attemptsTable } from "@/db/schema";
-import { avg, count, eq, sql } from "drizzle-orm";
+import { and, avg, count, eq, gte, lt, sql } from "drizzle-orm";
 
 export type DailyAttemptCount = {
   year: number;
@@ -60,4 +60,28 @@ export async function getDailyAttemptCountsQuery(userId: string): Promise<DailyA
     );
 
   return rows;
+}
+
+export async function getTodayAttemptCount(userId: string): Promise<number> {
+  const db = getDb();
+  const now = new Date();
+  const startOfTodayUtc = new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
+  );
+  const startOfTomorrowUtc = new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1),
+  );
+
+  const [row] = await db
+    .select({ count: count() })
+    .from(attemptsTable)
+    .where(
+      and(
+        eq(attemptsTable.userId, userId),
+        gte(attemptsTable.answeredAt, startOfTodayUtc),
+        lt(attemptsTable.answeredAt, startOfTomorrowUtc),
+      ),
+    );
+
+  return row?.count ?? 0;
 }

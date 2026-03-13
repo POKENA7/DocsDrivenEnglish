@@ -15,18 +15,23 @@ type Tab = "ai" | "shared";
 
 export default function LearnPage({
   dueCount,
+  todayCount,
+  dailyGoalCount,
   children,
 }: {
   dueCount: number;
+  todayCount: number;
+  dailyGoalCount: number;
   children?: ReactNode;
 }) {
   const [tab, setTab] = useState<Tab>("ai");
-  const [questionCount, setQuestionCount] = useState(10);
-  const [reviewQuestionCount, setReviewQuestionCount] = useState(2);
   const [aiState, aiAction] = useActionState(startSessionFormAction, { error: null });
   const [sharedState, sharedAction] = useActionState(startSharedSessionFormAction, {
     error: null,
   });
+
+  const remaining = Math.max(0, dailyGoalCount - todayCount);
+  const isGoalAchieved = todayCount >= dailyGoalCount;
 
   return (
     <TopicSuggestionSelectionProvider>
@@ -36,9 +41,23 @@ export default function LearnPage({
           <p className="mt-2 lede">学習したい技術要素を入力して、クイズを生成します。</p>
         </div>
 
+        <div
+          className="reveal mt-4 rounded-lg border border-primary/30 bg-primary/5 px-4 py-3 text-sm"
+          role="status"
+          style={{ animationDelay: "20ms" }}
+        >
+          {isGoalAchieved ? (
+            <span>🎉 本日の目標達成！（{todayCount} 問回答済み）</span>
+          ) : (
+            <span>
+              📊 本日の進捗: {todayCount} / {dailyGoalCount} 問（残り {remaining} 問）
+            </span>
+          )}
+        </div>
+
         {dueCount > 0 && (
           <div
-            className="reveal mt-4 rounded-lg border border-primary/30 bg-primary/5 px-4 py-3 text-sm"
+            className="reveal mt-3 rounded-lg border border-primary/30 bg-primary/5 px-4 py-3 text-sm"
             role="status"
             style={{ animationDelay: "40ms" }}
           >
@@ -81,14 +100,7 @@ export default function LearnPage({
         </div>
 
         {tab === "ai" && (
-          <AiTabContent
-            aiAction={aiAction}
-            aiState={aiState}
-            questionCount={questionCount}
-            reviewQuestionCount={reviewQuestionCount}
-            onQuestionCountChange={setQuestionCount}
-            onReviewQuestionCountChange={setReviewQuestionCount}
-          >
+          <AiTabContent aiAction={aiAction} aiState={aiState}>
             {children}
           </AiTabContent>
         )}
@@ -110,12 +122,7 @@ export default function LearnPage({
                 </div>
               )}
 
-              <QuizFormFields
-                questionCount={questionCount}
-                reviewQuestionCount={reviewQuestionCount}
-                onQuestionCountChange={setQuestionCount}
-                onReviewQuestionCountChange={setReviewQuestionCount}
-              />
+              <QuizFormFields />
 
               <div className="mt-6">
                 <SubmitButton />
@@ -131,21 +138,9 @@ export default function LearnPage({
 function AiTabContent(props: {
   aiAction: (payload: FormData) => void;
   aiState: { error: string | null };
-  questionCount: number;
-  reviewQuestionCount: number;
-  onQuestionCountChange: (value: number) => void;
-  onReviewQuestionCountChange: (value: number) => void;
   children?: ReactNode;
 }) {
-  const {
-    aiAction,
-    aiState,
-    questionCount,
-    reviewQuestionCount,
-    onQuestionCountChange,
-    onReviewQuestionCountChange,
-    children,
-  } = props;
+  const { aiAction, aiState, children } = props;
   const { topic, articleKey, setManualTopic } = useTopicSuggestionSelection();
 
   return (
@@ -174,12 +169,7 @@ function AiTabContent(props: {
 
         {children}
 
-        <QuizFormFields
-          questionCount={questionCount}
-          reviewQuestionCount={reviewQuestionCount}
-          onQuestionCountChange={onQuestionCountChange}
-          onReviewQuestionCountChange={onReviewQuestionCountChange}
-        />
+        <QuizFormFields />
 
         {aiState.error && (
           <div
@@ -192,7 +182,6 @@ function AiTabContent(props: {
 
         <div className="mt-6 flex items-center gap-3">
           <SubmitButton />
-          <p className="text-xs text-muted-foreground">{questionCount}問のクイズが始まります</p>
         </div>
       </section>
     </form>

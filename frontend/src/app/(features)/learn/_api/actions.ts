@@ -14,6 +14,7 @@ import { submitQuizAnswer } from "@/server/quiz/answer";
 import { ApiError } from "@/server/quiz/errors";
 import { fetchMoreExplanation } from "@/server/quiz/moreExplanation";
 import { modeSchema } from "@/server/quiz/types";
+import { getUserSettings } from "@/server/user-settings/query";
 import type {
   SubmitAnswerInput,
   SubmitAnswerResponse,
@@ -24,8 +25,6 @@ import type {
 /* ------------------------------------------------------------------ */
 /*  Zod スキーマ — FormData バリデーション                             */
 /* ------------------------------------------------------------------ */
-const questionCountSchema = z.coerce.number().int().min(1).max(20).catch(10);
-const reviewQuestionCountSchema = z.coerce.number().int().min(0).catch(0);
 const articleKeySchema = z
   .string()
   .trim()
@@ -37,25 +36,15 @@ const startSessionInput = z
     topic: z.string().trim().min(1).max(300),
     articleKey: articleKeySchema,
     mode: modeSchema,
-    questionCount: questionCountSchema,
-    reviewQuestionCount: reviewQuestionCountSchema,
   })
   .transform((data) => ({
     ...data,
     articleKey: data.articleKey || null,
-    reviewQuestionCount: Math.min(data.reviewQuestionCount, data.questionCount - 1),
   }));
 
-const sharedSessionInput = z
-  .object({
-    mode: modeSchema,
-    questionCount: questionCountSchema,
-    reviewQuestionCount: reviewQuestionCountSchema,
-  })
-  .transform((d) => ({
-    ...d,
-    reviewQuestionCount: Math.min(d.reviewQuestionCount, d.questionCount - 1),
-  }));
+const sharedSessionInput = z.object({
+  mode: modeSchema,
+});
 
 /* ------------------------------------------------------------------ */
 /*  Server Actions                                                     */
@@ -69,19 +58,18 @@ export async function startSessionFormAction(
     topic: formData.get("topic") ?? "",
     articleKey: formData.get("articleKey") ?? "",
     mode: formData.get("mode") ?? "word",
-    questionCount: formData.get("questionCount") ?? 10,
-    reviewQuestionCount: formData.get("reviewQuestionCount") ?? 0,
   });
   if (!parsed.success) return { error: "入力値が不正です。" };
 
   const userId = await requireUserId();
+  const settings = await getUserSettings(userId);
   const session = await startQuizSession({
     topic: parsed.data.topic,
     sourceType: parsed.data.articleKey ? "hn_trend" : "manual",
     articleKey: parsed.data.articleKey,
     mode: parsed.data.mode,
-    questionCount: parsed.data.questionCount,
-    reviewQuestionCount: parsed.data.reviewQuestionCount,
+    questionCount: settings.dailyGoalCount,
+    reviewQuestionCount: settings.dailyReviewCount,
     userId,
   });
   redirect(`/learn/${session.sessionId}`);
@@ -93,15 +81,19 @@ export async function startSharedSessionFormAction(
 ): Promise<{ error: string | null }> {
   const parsed = sharedSessionInput.safeParse({
     mode: formData.get("mode") ?? "word",
-    questionCount: formData.get("questionCount") ?? 10,
-    reviewQuestionCount: formData.get("reviewQuestionCount") ?? 0,
   });
   if (!parsed.success) return { error: null };
 
   const userId = await requireUserId();
+  const settings = await getUserSettings(userId);
 
   try {
-    const session = await startSharedQuizSession({ ...parsed.data, userId });
+    const session = await startSharedQuizSession({
+      ...parsed.data,
+      questionCount: settings.dailyGoalCount,
+      reviewQuestionCount: settings.dailyReviewCount,
+      userId,
+    });
     redirect(`/learn/${session.sessionId}`);
   } catch (e) {
     // redirect() は内部で特殊なエラーを throw するので再 throw する
