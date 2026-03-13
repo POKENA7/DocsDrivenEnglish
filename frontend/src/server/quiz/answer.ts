@@ -5,6 +5,7 @@ import { reviewQueue, sessions as sessionsTable } from "@/db/schema";
 import { and, eq, sql } from "drizzle-orm";
 
 import { recordAttempt } from "@/server/history/record";
+import { parseStringArrayColumn } from "@/server/json";
 
 import { ApiError } from "./errors";
 import { getQuestion } from "./query";
@@ -25,7 +26,10 @@ export async function submitQuizAnswer(
 
   if (!session) throw new ApiError("BAD_REQUEST", "セッションが見つかりません");
 
-  const questionIds = JSON.parse(session.questionIdsJson) as string[];
+  const questionIds = parseStringArrayColumn({
+    columnName: "question_ids_json",
+    raw: session.questionIdsJson,
+  });
   if (!questionIds.includes(input.questionId)) {
     throw new ApiError("BAD_REQUEST", "セッションが一致しません");
   }

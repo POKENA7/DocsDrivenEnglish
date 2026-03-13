@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
+import { ApiError } from "@/server/quiz/errors";
 import { getSessionResult } from "@/server/quiz/query";
 
 vi.mock("@opennextjs/cloudflare", () => ({
@@ -127,5 +128,29 @@ describe("getSessionResult", () => {
 
     const result = await getSessionResult(SESSION_ID);
     expect(result.items.map((i) => i.questionId)).toEqual(QUESTION_IDS);
+  });
+
+  it("壊れた choicesJson を読んだ場合は INTERNAL を投げる", async () => {
+    const { getDb } = await import("@/db/client");
+    vi.mocked(getDb).mockReturnValue(
+      mockDbWith(
+        [mockSession],
+        [
+          {
+            ...mockQuestions[0],
+            choicesJson: "[1,2,3,4]",
+          },
+        ],
+        [],
+      ),
+    );
+
+    try {
+      await getSessionResult(SESSION_ID);
+      throw new Error("expected getSessionResult to throw");
+    } catch (error) {
+      expect(error).toBeInstanceOf(ApiError);
+      expect(error).toMatchObject({ code: "INTERNAL" });
+    }
   });
 });

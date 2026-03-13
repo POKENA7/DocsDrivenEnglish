@@ -6,6 +6,7 @@ import { z } from "zod";
 import { stripUrlsFromText } from "@/app/(features)/learn/_utils/stripUrlsFromText";
 import { getDb } from "@/db/client";
 import { hnTrendCache } from "@/db/schema";
+import { parseJsonColumn } from "@/server/json";
 import { ApiError } from "@/server/quiz/errors";
 
 const HN_TOP_STORIES_URL = "https://hacker-news.firebaseio.com/v0/topstories.json";
@@ -142,7 +143,11 @@ async function readTrendCache(): Promise<{ articles: HnTrendArticle[]; cachedAt:
   if (!row) return null;
 
   return {
-    articles: trendArticlesSchema.parse(JSON.parse(row.articles) as unknown),
+    articles: parseJsonColumn({
+      columnName: "articles",
+      raw: row.articles,
+      schema: trendArticlesSchema,
+    }),
     cachedAt: row.cachedAt,
   };
 }
