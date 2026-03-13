@@ -1,9 +1,10 @@
 import SessionCompletePage from "../../_components/SessionCompletePage";
 
-import { getSessionResult } from "@/server/quiz/query";
 import { auth } from "@clerk/nextjs/server";
 import { getUserSettings } from "@/server/user-settings/query";
 import { getTodayAttemptCount } from "@/server/history/query";
+import { getSessionResult } from "@/server/quiz/query";
+import { DEFAULT_USER_SETTINGS } from "@/server/user-settings/query";
 
 type Params = {
   sessionId: string;
@@ -19,7 +20,7 @@ export default async function LearnSessionComplete({ params }: PageProps) {
 
   const [result, settings, todayCount] = await Promise.all([
     getSessionResult(sessionId),
-    userId ? getUserSettings(userId) : Promise.resolve({ dailyGoalCount: 10, dailyReviewCount: 2 }),
+    userId ? getUserSettings(userId) : Promise.resolve(DEFAULT_USER_SETTINGS),
     userId ? getTodayAttemptCount(userId) : Promise.resolve(0),
   ]);
 

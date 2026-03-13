@@ -2,7 +2,7 @@ import "server-only";
 
 import { getDb } from "@/db/client";
 import { attempts as attemptsTable } from "@/db/schema";
-import { avg, count, eq, sql, and } from "drizzle-orm";
+import { and, avg, count, eq, gte, lt, sql } from "drizzle-orm";
 
 export type DailyAttemptCount = {
   year: number;
@@ -64,6 +64,13 @@ export async function getDailyAttemptCountsQuery(userId: string): Promise<DailyA
 
 export async function getTodayAttemptCount(userId: string): Promise<number> {
   const db = getDb();
+  const now = new Date();
+  const startOfTodayUtc = new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
+  );
+  const startOfTomorrowUtc = new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1),
+  );
 
   const [row] = await db
     .select({ count: count() })
@@ -71,7 +78,8 @@ export async function getTodayAttemptCount(userId: string): Promise<number> {
     .where(
       and(
         eq(attemptsTable.userId, userId),
-        sql`strftime('%Y-%m-%d', ${attemptsTable.answeredAt} / 1000, 'unixepoch') = date('now')`,
+        gte(attemptsTable.answeredAt, startOfTodayUtc),
+        lt(attemptsTable.answeredAt, startOfTomorrowUtc),
       ),
     );
 

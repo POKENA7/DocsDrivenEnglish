@@ -9,7 +9,7 @@ type UserSettings = {
   dailyReviewCount: number;
 };
 
-const DEFAULT_SETTINGS: UserSettings = {
+export const DEFAULT_USER_SETTINGS: UserSettings = {
   dailyGoalCount: 10,
   dailyReviewCount: 2,
 };
@@ -22,7 +22,7 @@ export async function getUserSettings(userId: string): Promise<UserSettings> {
     .where(eq(userSettingsTable.userId, userId))
     .limit(1);
 
-  if (!row) return DEFAULT_SETTINGS;
+  if (!row) return DEFAULT_USER_SETTINGS;
 
   return {
     dailyGoalCount: row.dailyGoalCount,
