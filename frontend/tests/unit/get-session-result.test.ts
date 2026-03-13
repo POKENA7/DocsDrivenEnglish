@@ -72,7 +72,7 @@ function mockDbWith(sessionRows: unknown[], questionRows: unknown[], attemptRows
         }),
       };
     },
-  } as ReturnType<typeof import("@/db/client").getDb>;
+  } as unknown as ReturnType<typeof import("@/db/client").getDb>;
 }
 
 describe("getSessionResult", () => {
